@@ -2,8 +2,8 @@ import type { Metadata } from "next";
 import "./globals.css";
 
 export const metadata: Metadata = {
-  title: "Kaitori Pop Generator",
-  description: "Create high resolution TCG buylist pop images."
+  title: "買取ポップ画像ジェネレーター",
+  description: "高解像度のTCG買取リストポップ画像を作成します。"
 };
 
 export default function RootLayout({
