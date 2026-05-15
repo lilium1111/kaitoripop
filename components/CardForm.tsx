@@ -5,12 +5,14 @@ import type { CardItem } from "@/types/popup";
 
 type CardFormProps = {
   card: CardItem;
+  isExpanded: boolean;
   index: number;
   total: number;
   onChange: (card: CardItem) => void;
   onDelete: () => void;
   onMoveUp: () => void;
   onMoveDown: () => void;
+  onToggle: () => void;
 };
 
 function readFileAsDataUrl(file: File) {
@@ -24,12 +26,14 @@ function readFileAsDataUrl(file: File) {
 
 export function CardForm({
   card,
+  isExpanded,
   index,
   total,
   onChange,
   onDelete,
   onMoveUp,
-  onMoveDown
+  onMoveDown,
+  onToggle
 }: CardFormProps) {
   const { getRootProps, getInputProps, isDragActive } = useDropzone({
     accept: { "image/*": [] },
@@ -40,13 +44,26 @@ export function CardForm({
       onChange({ ...card, image: await readFileAsDataUrl(file) });
     }
   });
+  const formattedPrice =
+    card.price === ""
+      ? ""
+      : new Intl.NumberFormat("ja-JP", {
+          style: "currency",
+          currency: "JPY",
+          maximumFractionDigits: 0
+        }).format(card.price);
+  const displayName = card.name.trim() || "\u30ab\u30fc\u30c9\u540d\u672a\u5165\u529b";
 
   return (
-    <section className="rounded-[8px] border border-slate-200 bg-white p-4 shadow-sm">
-      <div className="mb-3 flex items-center justify-between gap-2">
-        <h3 className="text-sm font-bold text-slate-700">
+    <section className="overflow-hidden rounded-[8px] border border-slate-200 bg-white shadow-sm">
+      <div className="flex items-center justify-between gap-2 border-b border-slate-100 px-3 py-2">
+        <button
+          className="min-w-0 text-left text-sm font-bold text-slate-700"
+          onClick={onToggle}
+          type="button"
+        >
           {"\u30ab\u30fc\u30c9"} {index + 1}
-        </h3>
+        </button>
         <div className="flex gap-1">
           <button
             className="h-8 rounded border border-slate-200 px-2 text-xs font-bold disabled:opacity-35"
@@ -74,7 +91,33 @@ export function CardForm({
         </div>
       </div>
 
-      <div className="grid gap-3">
+      {!isExpanded ? (
+        <button
+          className="grid w-full grid-cols-[44px_minmax(0,1fr)_auto] items-center gap-3 px-3 py-2 text-left transition hover:bg-slate-50"
+          onClick={onToggle}
+          type="button"
+        >
+          <span className="flex h-14 w-11 items-center justify-center overflow-hidden rounded border border-slate-200 bg-slate-50">
+            {card.image ? (
+              <img alt="" className="h-full w-full object-contain" src={card.image} />
+            ) : (
+              <span className="text-[10px] font-bold text-slate-400">No image</span>
+            )}
+          </span>
+          <span className="min-w-0">
+            <span className="block truncate text-sm font-bold text-slate-800">{displayName}</span>
+            <span className="mt-0.5 block text-sm font-black text-rose-700">
+              {formattedPrice || "\u4fa1\u683c\u672a\u5165\u529b"}
+            </span>
+          </span>
+          <span className="rounded bg-slate-900 px-3 py-1.5 text-xs font-bold text-white">
+            {"\u7de8\u96c6"}
+          </span>
+        </button>
+      ) : null}
+
+      {isExpanded ? (
+      <div className="grid gap-2 px-3 py-3">
         <label className="grid gap-1 text-sm font-semibold text-slate-700">
           {"\u30ab\u30fc\u30c9\u540d"}
           <input
@@ -99,24 +142,35 @@ export function CardForm({
           />
         </label>
 
-        <div
-          {...getRootProps()}
-          className={[
-            "flex min-h-24 cursor-pointer items-center justify-center rounded border border-dashed px-3 py-4 text-center text-sm transition",
-            isDragActive ? "border-blue-500 bg-blue-50" : "border-slate-300 bg-slate-50"
-          ].join(" ")}
-        >
-          <input {...getInputProps()} />
-          {card.image ? (
-            <div className="flex items-center gap-3">
-              <img alt="" className="h-16 w-12 object-contain" src={card.image} />
-              <span className="font-semibold text-slate-600">{"\u753b\u50cf\u3092\u5909\u66f4"}</span>
-            </div>
-          ) : (
-            <span className="text-slate-500">{"\u753b\u50cf\u3092\u30c9\u30e9\u30c3\u30b0\u307e\u305f\u306f\u30af\u30ea\u30c3\u30af"}</span>
-          )}
+        <div className="flex items-center gap-3 rounded border border-slate-200 bg-slate-50 p-2">
+          <div className="flex h-16 w-12 shrink-0 items-center justify-center overflow-hidden rounded bg-white ring-1 ring-slate-200">
+            {card.image ? (
+              <img alt="" className="h-full w-full object-contain" src={card.image} />
+            ) : (
+              <span className="px-1 text-center text-[10px] font-bold leading-tight text-slate-400">
+                No image
+              </span>
+            )}
+          </div>
+          <div className="min-w-0 flex-1">
+            <button
+              {...getRootProps()}
+              className={[
+                "h-10 w-full rounded bg-blue-700 px-3 text-sm font-bold text-white transition",
+                isDragActive ? "bg-blue-800 ring-2 ring-blue-200" : ""
+              ].join(" ")}
+              type="button"
+            >
+              <input {...getInputProps()} />
+              {"\u753b\u50cf\u3092\u5909\u66f4"}
+            </button>
+            <p className="mt-1 text-xs text-slate-500">
+              {"\u30bf\u30c3\u30d7\u307e\u305f\u306f\u30c9\u30ed\u30c3\u30d7"}
+            </p>
+          </div>
         </div>
       </div>
+      ) : null}
     </section>
   );
 }

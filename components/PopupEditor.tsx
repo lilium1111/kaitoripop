@@ -55,6 +55,7 @@ function normalizeTemplate(data: Partial<PopupData>): PopupData {
 
 export function PopupEditor() {
   const [data, setData] = useState<PopupData>(() => createInitialData());
+  const [expandedCardId, setExpandedCardId] = useState(() => data.cards[0]?.id ?? "");
   const [message, setMessage] = useState("");
   const previewRef = useRef<HTMLCanvasElement>(null);
   const { save, load } = useLocalStorage<PopupData>(STORAGE_KEY);
@@ -65,6 +66,7 @@ export function PopupEditor() {
   );
 
   function updateCard(index: number, card: CardItem) {
+    setExpandedCardId(card.id);
     setData((current) => ({
       ...current,
       cards: current.cards.map((item, itemIndex) => (itemIndex === index ? card : item))
@@ -72,6 +74,10 @@ export function PopupEditor() {
   }
 
   function moveCard(index: number, direction: -1 | 1) {
+    const movingCardId = data.cards[index]?.id;
+    if (movingCardId) {
+      setExpandedCardId(movingCardId);
+    }
     setData((current) => {
       const next = [...current.cards];
       const targetIndex = index + direction;
@@ -184,7 +190,9 @@ export function PopupEditor() {
                 onClick={() => {
                   const saved = load();
                   if (saved) {
-                    setData(normalizeTemplate(saved));
+                    const nextData = normalizeTemplate(saved);
+                    setData(nextData);
+                    setExpandedCardId(nextData.cards[0]?.id ?? "");
                     setMessage("\u30c6\u30f3\u30d7\u30ec\u30fc\u30c8\u3092\u8aad\u307f\u8fbc\u307f\u307e\u3057\u305f\u3002");
                   } else {
                     setMessage("\u4fdd\u5b58\u6e08\u307f\u30c6\u30f3\u30d7\u30ec\u30fc\u30c8\u304c\u3042\u308a\u307e\u305b\u3093\u3002");
@@ -217,7 +225,11 @@ export function PopupEditor() {
               <h2 className="text-base font-black">{"\u30ab\u30fc\u30c9\u5165\u529b"}</h2>
               <button
                 className="h-10 shrink-0 rounded bg-blue-700 px-4 text-sm font-bold text-white"
-                onClick={() => setData({ ...data, cards: [...data.cards, createEmptyCard()] })}
+                onClick={() => {
+                  const card = createEmptyCard();
+                  setData({ ...data, cards: [...data.cards, card] });
+                  setExpandedCardId(card.id);
+                }}
                 type="button"
               >
                 {"\u30ab\u30fc\u30c9\u8ffd\u52a0"}
@@ -227,17 +239,23 @@ export function PopupEditor() {
               {data.cards.map((card, index) => (
                 <CardForm
                   card={card}
+                  isExpanded={expandedCardId === card.id}
                   index={index}
                   key={card.id}
                   onChange={(nextCard) => updateCard(index, nextCard)}
-                  onDelete={() =>
+                  onDelete={() => {
+                    const nextCards = data.cards.filter((item) => item.id !== card.id);
+                    if (expandedCardId === card.id) {
+                      setExpandedCardId(nextCards[index]?.id ?? nextCards[index - 1]?.id ?? "");
+                    }
                     setData({
                       ...data,
-                      cards: data.cards.filter((item) => item.id !== card.id)
-                    })
-                  }
+                      cards: nextCards
+                    });
+                  }}
                   onMoveDown={() => moveCard(index, 1)}
                   onMoveUp={() => moveCard(index, -1)}
+                  onToggle={() => setExpandedCardId(expandedCardId === card.id ? "" : card.id)}
                   total={data.cards.length}
                 />
               ))}
