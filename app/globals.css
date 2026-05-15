@@ -1,0 +1,77 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  color-scheme: light;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  background: #eef4ff;
+  color: #172033;
+}
+
+button,
+input,
+select,
+textarea {
+  font: inherit;
+}
+
+.pop-stripes {
+  background-image:
+    repeating-linear-gradient(
+      112deg,
+      rgba(255, 255, 255, 0.13) 0,
+      rgba(255, 255, 255, 0.13) 18px,
+      rgba(255, 255, 255, 0) 18px,
+      rgba(255, 255, 255, 0) 64px
+    ),
+    radial-gradient(circle at 20% 12%, rgba(95, 210, 255, 0.55), transparent 24%),
+    linear-gradient(135deg, #121d7a 0%, #118ad1 48%, #11206f 100%);
+}
+
+.price-stroke {
+  color: #ff1010;
+  font-family: "Arial Black", Impact, system-ui, sans-serif;
+  font-weight: 900;
+  letter-spacing: -0.02em;
+  line-height: 1;
+  paint-order: stroke fill;
+  text-shadow:
+    3px 0 #fff,
+    -3px 0 #fff,
+    0 3px #fff,
+    0 -3px #fff,
+    3px 3px #fff,
+    -3px 3px #fff,
+    3px -3px #fff,
+    -3px -3px #fff,
+    5px 5px 0 rgba(0, 0, 0, 0.45);
+  -webkit-text-stroke: 1px white;
+}
+
+.name-stroke {
+  -webkit-text-stroke: 5px black;
+  paint-order: stroke fill;
+  text-shadow: 5px 5px 0 rgba(0, 0, 0, 0.75);
+}
+
+.pop-title-badge {
+  background: linear-gradient(135deg, #f20d16 0%, #ff5a12 48%, #ffb000 100%);
+  border-radius: 34px;
+  -webkit-text-stroke: 8px black;
+  paint-order: stroke fill;
+  text-shadow:
+    8px 8px 0 rgba(0, 0, 0, 0.72),
+    0 22px 40px rgba(0, 0, 0, 0.42);
+  box-shadow:
+    0 26px 42px rgba(0, 0, 0, 0.46),
+    inset 0 7px 0 rgba(255, 255, 255, 0.34),
+    inset 0 -8px 0 rgba(122, 0, 0, 0.24);
+}
