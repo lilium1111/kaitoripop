@@ -8,7 +8,6 @@ export type CardItem = {
 export type PopupData = {
   title: string;
   updateDate: string;
-  backgroundColor: string;
   columns: number;
   gap: number;
   fontSize: number;

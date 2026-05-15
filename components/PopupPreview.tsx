@@ -44,15 +44,15 @@ export function PopupPreview({ data, previewRef }: PopupPreviewProps) {
   }, [data]);
 
   return (
-    <div className="w-full overflow-hidden rounded-[8px] border border-slate-200 bg-slate-100 p-3 xl:h-[calc(100vh-7.5rem)]">
-      <div className="flex h-full w-full items-start justify-center overflow-hidden">
+    <div className="w-full rounded-[8px] border border-slate-200 bg-slate-100 p-3 xl:h-[calc(100vh-7.5rem)]">
+      <div className="flex h-full min-h-[420px] w-full items-center justify-center overflow-auto xl:min-h-0">
         <canvas
-          className="block origin-top scale-[0.18] rounded-[2px] shadow-lg sm:scale-[0.24] lg:scale-[0.28] xl:scale-[0.22] 2xl:scale-[0.26]"
+          className="block h-auto max-h-full max-w-full rounded-[2px] shadow-lg"
           height={POSTER_HEIGHT}
           ref={canvasRef}
           style={{
-            height: POSTER_HEIGHT,
-            width: POSTER_WIDTH
+            aspectRatio: `${POSTER_WIDTH} / ${POSTER_HEIGHT}`,
+            width: `min(100%, calc((100vh - 9rem) * ${POSTER_WIDTH / POSTER_HEIGHT}))`
           }}
           width={POSTER_WIDTH}
         />

@@ -33,7 +33,6 @@ function createInitialData(): PopupData {
   return {
     title: "\u9ad8\u4fa1\u8cb7\u53d6\uff01",
     updateDate: getTodayLabel(),
-    backgroundColor: "#1237a3",
     columns: 4,
     gap: 18,
     fontSize: 30,
@@ -41,14 +40,14 @@ function createInitialData(): PopupData {
   };
 }
 
-function normalizeImport(data: PopupData): PopupData {
+function normalizeTemplate(data: Partial<PopupData>): PopupData {
   return {
     ...createInitialData(),
     ...data,
     cards: (data.cards || []).map((card) => ({
       id: card.id || makeId(),
       name: card.name || "",
-      price: card.price === "" ? "" : Number(card.price),
+      price: card.price === "" || card.price == null ? "" : Number(card.price),
       image: card.image
     }))
   };
@@ -58,7 +57,6 @@ export function PopupEditor() {
   const [data, setData] = useState<PopupData>(() => createInitialData());
   const [message, setMessage] = useState("");
   const previewRef = useRef<HTMLCanvasElement>(null);
-  const fileInputRef = useRef<HTMLInputElement>(null);
   const { save, load } = useLocalStorage<PopupData>(STORAGE_KEY);
 
   const visibleCardCount = useMemo(
@@ -81,22 +79,6 @@ export function PopupEditor() {
       [next[index], next[targetIndex]] = [next[targetIndex], next[index]];
       return { ...current, cards: next };
     });
-  }
-
-  function exportJson() {
-    const blob = new Blob([JSON.stringify(data, null, 2)], { type: "application/json" });
-    const url = URL.createObjectURL(blob);
-    const link = document.createElement("a");
-    link.href = url;
-    link.download = "kaitori-pop-template.json";
-    link.click();
-    URL.revokeObjectURL(url);
-  }
-
-  async function importJson(file: File) {
-    const text = await file.text();
-    setData(normalizeImport(JSON.parse(text) as PopupData));
-    setMessage("JSON\u3092\u8aad\u307f\u8fbc\u307f\u307e\u3057\u305f\u3002");
   }
 
   async function downloadPng() {
@@ -151,15 +133,6 @@ export function PopupEditor() {
                 />
               </label>
               <label className="grid gap-1 text-sm font-semibold text-slate-700">
-                {"\u80cc\u666f\u8272"}
-                <input
-                  className="h-10 w-full min-w-0 rounded border border-slate-300 p-1"
-                  onChange={(event) => setData({ ...data, backgroundColor: event.target.value })}
-                  type="color"
-                  value={data.backgroundColor}
-                />
-              </label>
-              <label className="grid gap-1 text-sm font-semibold text-slate-700">
                 {"\u5217\u6570"}
                 <select
                   className="h-10 min-w-0 rounded border border-slate-300 px-3 font-normal"
@@ -211,7 +184,7 @@ export function PopupEditor() {
                 onClick={() => {
                   const saved = load();
                   if (saved) {
-                    setData(normalizeImport(saved));
+                    setData(normalizeTemplate(saved));
                     setMessage("\u30c6\u30f3\u30d7\u30ec\u30fc\u30c8\u3092\u8aad\u307f\u8fbc\u307f\u307e\u3057\u305f\u3002");
                   } else {
                     setMessage("\u4fdd\u5b58\u6e08\u307f\u30c6\u30f3\u30d7\u30ec\u30fc\u30c8\u304c\u3042\u308a\u307e\u305b\u3093\u3002");
@@ -220,20 +193,6 @@ export function PopupEditor() {
                 type="button"
               >
                 {"\u30c6\u30f3\u30d7\u30ec\u30fc\u30c8\u8aad\u8fbc"}
-              </button>
-              <button
-                className="h-10 rounded bg-white px-3 text-sm font-bold ring-1 ring-slate-300"
-                onClick={exportJson}
-                type="button"
-              >
-                JSON{"\u30a8\u30af\u30b9\u30dd\u30fc\u30c8"}
-              </button>
-              <button
-                className="h-10 rounded bg-white px-3 text-sm font-bold ring-1 ring-slate-300"
-                onClick={() => fileInputRef.current?.click()}
-                type="button"
-              >
-                JSON{"\u30a4\u30f3\u30dd\u30fc\u30c8"}
               </button>
               <button
                 className="h-10 rounded bg-blue-700 px-3 text-sm font-black text-white"
@@ -249,17 +208,6 @@ export function PopupEditor() {
               >
                 PNG{"\u30c0\u30a6\u30f3\u30ed\u30fc\u30c9"}
               </button>
-              <input
-                accept="application/json"
-                className="hidden"
-                onChange={(event) => {
-                  const file = event.target.files?.[0];
-                  if (file) void importJson(file);
-                  event.target.value = "";
-                }}
-                ref={fileInputRef}
-                type="file"
-              />
             </div>
             {message ? <p className="mt-3 text-sm font-semibold text-blue-700">{message}</p> : null}
           </section>
