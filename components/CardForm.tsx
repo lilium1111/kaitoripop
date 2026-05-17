@@ -12,17 +12,9 @@ type CardFormProps = {
   onDelete: () => void;
   onMoveUp: () => void;
   onMoveDown: () => void;
+  onImageUpload: (file: File) => void;
   onToggle: () => void;
 };
-
-function readFileAsDataUrl(file: File) {
-  return new Promise<string>((resolve, reject) => {
-    const reader = new FileReader();
-    reader.onload = () => resolve(String(reader.result));
-    reader.onerror = reject;
-    reader.readAsDataURL(file);
-  });
-}
 
 export function CardForm({
   card,
@@ -33,6 +25,7 @@ export function CardForm({
   onDelete,
   onMoveUp,
   onMoveDown,
+  onImageUpload,
   onToggle
 }: CardFormProps) {
   const { getRootProps, getInputProps, isDragActive } = useDropzone({
@@ -41,7 +34,7 @@ export function CardForm({
     onDrop: async (files) => {
       const file = files[0];
       if (!file) return;
-      onChange({ ...card, image: await readFileAsDataUrl(file) });
+      onImageUpload(file);
     }
   });
   const formattedPrice =

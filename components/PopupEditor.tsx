@@ -1,10 +1,11 @@
 "use client";
 
-import { useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { CardForm } from "@/components/CardForm";
 import { PopupPreview } from "@/components/PopupPreview";
 import { useLocalStorage } from "@/components/useLocalStorage";
 import { copyPosterToClipboard, exportToPng } from "@/lib/exportToPng";
+import { readFileAsDataUrl } from "@/lib/readFileAsDataUrl";
 import type { CardItem, PopupData } from "@/types/popup";
 
 const STORAGE_KEY = "kaitori-pop-template-v1";
@@ -56,6 +57,7 @@ function normalizeTemplate(data: Partial<PopupData>): PopupData {
 export function PopupEditor() {
   const [data, setData] = useState<PopupData>(() => createInitialData());
   const [expandedCardId, setExpandedCardId] = useState(() => data.cards[0]?.id ?? "");
+  const [isGlobalSettingsOpen, setIsGlobalSettingsOpen] = useState(false);
   const [message, setMessage] = useState("");
   const previewRef = useRef<HTMLCanvasElement>(null);
   const { save, load } = useLocalStorage<PopupData>(STORAGE_KEY);
@@ -72,6 +74,39 @@ export function PopupEditor() {
       cards: current.cards.map((item, itemIndex) => (itemIndex === index ? card : item))
     }));
   }
+
+  const handleImageUpload = useCallback(
+    async (file: File, cardId?: string) => {
+      const image = await readFileAsDataUrl(file);
+      const targetCardId = cardId || expandedCardId || data.cards[0]?.id;
+
+      if (!targetCardId) return;
+      setExpandedCardId(targetCardId);
+      setData((current) => {
+        return {
+          ...current,
+          cards: current.cards.map((card) => (card.id === targetCardId ? { ...card, image } : card))
+        };
+      });
+    },
+    [data.cards, expandedCardId]
+  );
+
+  useEffect(() => {
+    function handlePaste(event: ClipboardEvent) {
+      const items = Array.from(event.clipboardData?.items || []);
+      const imageItem = items.find((item) => item.type.startsWith("image/"));
+      const file = imageItem?.getAsFile();
+
+      if (!file) return;
+
+      event.preventDefault();
+      void handleImageUpload(file);
+    }
+
+    window.addEventListener("paste", handlePaste);
+    return () => window.removeEventListener("paste", handlePaste);
+  }, [handleImageUpload]);
 
   function moveCard(index: number, direction: -1 | 1) {
     const movingCardId = data.cards[index]?.id;
@@ -119,105 +154,120 @@ export function PopupEditor() {
           </div>
 
           <section className="rounded-[8px] border border-slate-200 bg-white p-4 shadow-sm xl:sticky xl:top-0 xl:z-20 xl:shadow-lg">
-            <h2 className="mb-4 text-base font-black">{"\u5168\u4f53\u8a2d\u5b9a"}</h2>
-            <div className="grid gap-4 sm:grid-cols-2">
-              <label className="grid gap-1 text-sm font-semibold text-slate-700 sm:col-span-2">
-                {"\u30bf\u30a4\u30c8\u30eb"}
-                <input
-                  className="h-10 min-w-0 rounded border border-slate-300 px-3 font-normal"
-                  onChange={(event) => setData({ ...data, title: event.target.value })}
-                  value={data.title}
-                />
-              </label>
-              <label className="grid gap-1 text-sm font-semibold text-slate-700">
-                {"\u66f4\u65b0\u65e5"}
-                <input
-                  className="h-10 min-w-0 rounded border border-slate-300 px-3 font-normal"
-                  onChange={(event) => setData({ ...data, updateDate: event.target.value })}
-                  placeholder="2026/05/15"
-                  value={data.updateDate}
-                />
-              </label>
-              <label className="grid gap-1 text-sm font-semibold text-slate-700">
-                {"\u5217\u6570"}
-                <select
-                  className="h-10 min-w-0 rounded border border-slate-300 px-3 font-normal"
-                  onChange={(event) => setData({ ...data, columns: Number(event.target.value) })}
-                  value={data.columns}
-                >
-                  <option value={2}>{"2\u5217"}</option>
-                  <option value={3}>{"3\u5217"}</option>
-                  <option value={4}>{"4\u5217"}</option>
-                </select>
-              </label>
-              <label className="grid gap-1 text-sm font-semibold text-slate-700">
-                {"\u30ab\u30fc\u30c9\u9593\u306e\u4f59\u767d"}
-                <input
-                  className="h-10 min-w-0 rounded border border-slate-300 px-3 font-normal"
-                  max={36}
-                  min={8}
-                  onChange={(event) => setData({ ...data, gap: Number(event.target.value) })}
-                  type="number"
-                  value={data.gap}
-                />
-              </label>
-              <label className="grid gap-1 text-sm font-semibold text-slate-700 sm:col-span-2">
-                {"\u30d5\u30a9\u30f3\u30c8\u30b5\u30a4\u30ba"}
-                <input
-                  className="w-full min-w-0"
-                  max={42}
-                  min={20}
-                  onChange={(event) => setData({ ...data, fontSize: Number(event.target.value) })}
-                  type="range"
-                  value={data.fontSize}
-                />
-              </label>
-            </div>
+            <button
+              aria-expanded={isGlobalSettingsOpen}
+              className="flex w-full items-center justify-between gap-3 text-left"
+              onClick={() => setIsGlobalSettingsOpen((current) => !current)}
+              type="button"
+            >
+              <h2 className="text-base font-black">{"\u5168\u4f53\u8a2d\u5b9a"}</h2>
+              <span className="text-lg font-black text-slate-500" aria-hidden="true">
+                {isGlobalSettingsOpen ? "\u25b2" : "\u25bc"}
+              </span>
+            </button>
 
-            <div className="mt-4 grid grid-cols-2 gap-2 sm:grid-cols-3">
-              <button
-                className="h-10 rounded bg-slate-900 px-3 text-sm font-bold text-white"
-                onClick={() => {
-                  save(data);
-                  setMessage("\u30c6\u30f3\u30d7\u30ec\u30fc\u30c8\u3092\u4fdd\u5b58\u3057\u307e\u3057\u305f\u3002");
-                }}
-                type="button"
-              >
-                {"\u30c6\u30f3\u30d7\u30ec\u30fc\u30c8\u4fdd\u5b58"}
-              </button>
-              <button
-                className="h-10 rounded bg-white px-3 text-sm font-bold ring-1 ring-slate-300"
-                onClick={() => {
-                  const saved = load();
-                  if (saved) {
-                    const nextData = normalizeTemplate(saved);
-                    setData(nextData);
-                    setExpandedCardId(nextData.cards[0]?.id ?? "");
-                    setMessage("\u30c6\u30f3\u30d7\u30ec\u30fc\u30c8\u3092\u8aad\u307f\u8fbc\u307f\u307e\u3057\u305f\u3002");
-                  } else {
-                    setMessage("\u4fdd\u5b58\u6e08\u307f\u30c6\u30f3\u30d7\u30ec\u30fc\u30c8\u304c\u3042\u308a\u307e\u305b\u3093\u3002");
-                  }
-                }}
-                type="button"
-              >
-                {"\u30c6\u30f3\u30d7\u30ec\u30fc\u30c8\u8aad\u8fbc"}
-              </button>
-              <button
-                className="h-10 rounded bg-blue-700 px-3 text-sm font-black text-white"
-                onClick={copyImage}
-                type="button"
-              >
-                {"\u753b\u50cf\u3092\u30b3\u30d4\u30fc"}
-              </button>
-              <button
-                className="h-10 rounded bg-red-600 px-3 text-sm font-black text-white"
-                onClick={downloadPng}
-                type="button"
-              >
-                PNG{"\u30c0\u30a6\u30f3\u30ed\u30fc\u30c9"}
-              </button>
-            </div>
-            {message ? <p className="mt-3 text-sm font-semibold text-blue-700">{message}</p> : null}
+            {isGlobalSettingsOpen ? (
+              <>
+                <div className="mt-4 grid gap-4 sm:grid-cols-2">
+                  <label className="grid gap-1 text-sm font-semibold text-slate-700 sm:col-span-2">
+                    {"\u30bf\u30a4\u30c8\u30eb"}
+                    <input
+                      className="h-10 min-w-0 rounded border border-slate-300 px-3 font-normal"
+                      onChange={(event) => setData({ ...data, title: event.target.value })}
+                      value={data.title}
+                    />
+                  </label>
+                  <label className="grid gap-1 text-sm font-semibold text-slate-700">
+                    {"\u66f4\u65b0\u65e5"}
+                    <input
+                      className="h-10 min-w-0 rounded border border-slate-300 px-3 font-normal"
+                      onChange={(event) => setData({ ...data, updateDate: event.target.value })}
+                      placeholder="2026/05/15"
+                      value={data.updateDate}
+                    />
+                  </label>
+                  <label className="grid gap-1 text-sm font-semibold text-slate-700">
+                    {"\u5217\u6570"}
+                    <select
+                      className="h-10 min-w-0 rounded border border-slate-300 px-3 font-normal"
+                      onChange={(event) => setData({ ...data, columns: Number(event.target.value) })}
+                      value={data.columns}
+                    >
+                      <option value={2}>{"2\u5217"}</option>
+                      <option value={3}>{"3\u5217"}</option>
+                      <option value={4}>{"4\u5217"}</option>
+                    </select>
+                  </label>
+                  <label className="grid gap-1 text-sm font-semibold text-slate-700">
+                    {"\u30ab\u30fc\u30c9\u9593\u306e\u4f59\u767d"}
+                    <input
+                      className="h-10 min-w-0 rounded border border-slate-300 px-3 font-normal"
+                      max={36}
+                      min={8}
+                      onChange={(event) => setData({ ...data, gap: Number(event.target.value) })}
+                      type="number"
+                      value={data.gap}
+                    />
+                  </label>
+                  <label className="grid gap-1 text-sm font-semibold text-slate-700 sm:col-span-2">
+                    {"\u30d5\u30a9\u30f3\u30c8\u30b5\u30a4\u30ba"}
+                    <input
+                      className="w-full min-w-0"
+                      max={42}
+                      min={20}
+                      onChange={(event) => setData({ ...data, fontSize: Number(event.target.value) })}
+                      type="range"
+                      value={data.fontSize}
+                    />
+                  </label>
+                </div>
+
+                <div className="mt-4 grid grid-cols-2 gap-2 sm:grid-cols-3">
+                  <button
+                    className="h-10 rounded bg-slate-900 px-3 text-sm font-bold text-white"
+                    onClick={() => {
+                      save(data);
+                      setMessage("\u30c6\u30f3\u30d7\u30ec\u30fc\u30c8\u3092\u4fdd\u5b58\u3057\u307e\u3057\u305f\u3002");
+                    }}
+                    type="button"
+                  >
+                    {"\u30c6\u30f3\u30d7\u30ec\u30fc\u30c8\u4fdd\u5b58"}
+                  </button>
+                  <button
+                    className="h-10 rounded bg-white px-3 text-sm font-bold ring-1 ring-slate-300"
+                    onClick={() => {
+                      const saved = load();
+                      if (saved) {
+                        const nextData = normalizeTemplate(saved);
+                        setData(nextData);
+                        setExpandedCardId(nextData.cards[0]?.id ?? "");
+                        setMessage("\u30c6\u30f3\u30d7\u30ec\u30fc\u30c8\u3092\u8aad\u307f\u8fbc\u307f\u307e\u3057\u305f\u3002");
+                      } else {
+                        setMessage("\u4fdd\u5b58\u6e08\u307f\u30c6\u30f3\u30d7\u30ec\u30fc\u30c8\u304c\u3042\u308a\u307e\u305b\u3093\u3002");
+                      }
+                    }}
+                    type="button"
+                  >
+                    {"\u30c6\u30f3\u30d7\u30ec\u30fc\u30c8\u8aad\u8fbc"}
+                  </button>
+                  <button
+                    className="h-10 rounded bg-blue-700 px-3 text-sm font-black text-white"
+                    onClick={copyImage}
+                    type="button"
+                  >
+                    {"\u753b\u50cf\u3092\u30b3\u30d4\u30fc"}
+                  </button>
+                  <button
+                    className="h-10 rounded bg-red-600 px-3 text-sm font-black text-white"
+                    onClick={downloadPng}
+                    type="button"
+                  >
+                    PNG{"\u30c0\u30a6\u30f3\u30ed\u30fc\u30c9"}
+                  </button>
+                </div>
+                {message ? <p className="mt-3 text-sm font-semibold text-blue-700">{message}</p> : null}
+              </>
+            ) : null}
           </section>
 
           <section className="space-y-3 pb-6">
@@ -255,6 +305,7 @@ export function PopupEditor() {
                   }}
                   onMoveDown={() => moveCard(index, 1)}
                   onMoveUp={() => moveCard(index, -1)}
+                  onImageUpload={(file) => handleImageUpload(file, card.id)}
                   onToggle={() => setExpandedCardId(expandedCardId === card.id ? "" : card.id)}
                   total={data.cards.length}
                 />
