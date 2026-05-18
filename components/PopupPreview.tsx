@@ -27,19 +27,24 @@ export function PopupPreview({ data, previewRef }: PopupPreviewProps) {
   }, [previewRef]);
 
   useEffect(() => {
-    let cancelled = false;
+    const controller = new AbortController();
+    let frameId: number | undefined;
 
-    async function render() {
+    const timeoutId = window.setTimeout(() => {
       const canvas = canvasRef.current;
       if (!canvas) return;
-      await drawPoster(canvas, data);
-      if (cancelled) return;
-    }
 
-    void render();
+      frameId = window.requestAnimationFrame(() => {
+        void drawPoster(canvas, data, { signal: controller.signal });
+      });
+    }, 150);
 
     return () => {
-      cancelled = true;
+      controller.abort();
+      window.clearTimeout(timeoutId);
+      if (frameId !== undefined) {
+        window.cancelAnimationFrame(frameId);
+      }
     };
   }, [data]);
 

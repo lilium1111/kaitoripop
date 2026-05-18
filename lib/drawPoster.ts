@@ -5,6 +5,13 @@ import type { CardItem, PopupData } from "@/types/popup";
 export const POSTER_WIDTH = 2480;
 export const POSTER_HEIGHT = 3508;
 const POP_FONT_FAMILY = '"Arial Black", "Hiragino Maru Gothic ProN", "Yu Gothic", Meiryo, sans-serif';
+const TITLE_IMAGE_SRC = "/pop-assets/kouka-kaitori.png";
+const TITLE_PANEL_X = 80;
+const TITLE_PANEL_Y = 60;
+const TITLE_PANEL_W = 1100;
+const TITLE_PANEL_H = 300;
+const TITLE_PADDING_X = 40;
+const TITLE_PADDING_Y = 30;
 
 type CardMetrics = {
   cardHeight: number;
@@ -16,6 +23,25 @@ type CardMetrics = {
 type LoadedCard = CardItem & {
   imageElement?: HTMLImageElement;
 };
+
+type ImageBounds = {
+  x: number;
+  y: number;
+  width: number;
+  height: number;
+};
+
+type PosterAssets = {
+  titleImage?: HTMLImageElement;
+  cards: LoadedCard[];
+};
+
+type DrawPosterOptions = {
+  signal?: AbortSignal;
+};
+
+const imageCache = new Map<string, Promise<HTMLImageElement | undefined>>();
+const imageBoundsCache = new WeakMap<HTMLImageElement, ImageBounds>();
 
 function formatPrice(price: number | "") {
   if (price === "") return "";
@@ -55,17 +81,60 @@ function scaleCardMetrics(metrics: CardMetrics, scale: number): CardMetrics {
 }
 
 function loadImage(src?: string) {
-  return new Promise<HTMLImageElement | undefined>((resolve) => {
-    if (!src) {
-      resolve(undefined);
-      return;
-    }
+  if (!src) return Promise.resolve(undefined);
 
+  const cached = imageCache.get(src);
+  if (cached) return cached;
+
+  const promise = new Promise<HTMLImageElement | undefined>((resolve) => {
     const image = new Image();
     image.onload = () => resolve(image);
     image.onerror = () => resolve(undefined);
     image.src = src;
   });
+
+  imageCache.set(src, promise);
+  return promise;
+}
+
+function getOpaqueImageBounds(image: HTMLImageElement): ImageBounds {
+  const cached = imageBoundsCache.get(image);
+  if (cached) return cached;
+
+  const fallback = { x: 0, y: 0, width: image.naturalWidth, height: image.naturalHeight };
+  const canvas = document.createElement("canvas");
+  canvas.width = image.naturalWidth;
+  canvas.height = image.naturalHeight;
+  const ctx = canvas.getContext("2d");
+  if (!ctx) return fallback;
+
+  ctx.drawImage(image, 0, 0);
+
+  try {
+    const { data } = ctx.getImageData(0, 0, canvas.width, canvas.height);
+    let minX = canvas.width;
+    let minY = canvas.height;
+    let maxX = -1;
+    let maxY = -1;
+
+    for (let y = 0; y < canvas.height; y += 1) {
+      for (let x = 0; x < canvas.width; x += 1) {
+        const alpha = data[(y * canvas.width + x) * 4 + 3];
+        if (alpha === 0) continue;
+        minX = Math.min(minX, x);
+        minY = Math.min(minY, y);
+        maxX = Math.max(maxX, x);
+        maxY = Math.max(maxY, y);
+      }
+    }
+
+    if (maxX < minX || maxY < minY) return fallback;
+    const bounds = { x: minX, y: minY, width: maxX - minX + 1, height: maxY - minY + 1 };
+    imageBoundsCache.set(image, bounds);
+    return bounds;
+  } catch {
+    return fallback;
+  }
 }
 
 function roundedRect(
@@ -217,79 +286,46 @@ function clearShadow(ctx: CanvasRenderingContext2D) {
   ctx.shadowOffsetY = 0;
 }
 
-function fitTextSize(
-  ctx: CanvasRenderingContext2D,
-  text: string,
-  maxWidth: number,
-  initialSize: number,
-  minSize: number,
-  fontFamily = POP_FONT_FAMILY
-) {
-  let size = initialSize;
-  while (size > minSize) {
-    ctx.font = `900 ${size}px ${fontFamily}`;
-    if (ctx.measureText(text).width <= maxWidth) break;
-    size -= 2;
-  }
-  return size;
-}
-
-function drawPopHeadline(ctx: CanvasRenderingContext2D, title: string, x: number, y: number, width: number, height: number) {
-  const text = title.trim() || "\u9ad8\u4fa1\u8cb7\u53d6\uff01";
-  const textSize = fitTextSize(ctx, text, width - 150, 154, 82);
-
+function drawDarkBadge(ctx: CanvasRenderingContext2D, x: number, y: number, width: number, height: number, radius: number) {
   ctx.save();
-  drawShadow(ctx, "rgba(0,0,0,0.52)", 34, 16, 24);
-  ctx.translate(x + width / 2, y + height / 2);
-  ctx.rotate((-1.5 * Math.PI) / 180);
-  roundedRect(ctx, -width / 2, -height / 2, width, height, 42);
-  const banner = ctx.createLinearGradient(-width / 2, -height / 2, width / 2, height / 2);
-  banner.addColorStop(0, "#e90012");
-  banner.addColorStop(0.46, "#ff4a12");
-  banner.addColorStop(1, "#ff9f00");
-  ctx.fillStyle = banner;
-  ctx.fill();
+  drawShadow(ctx, "rgba(0,0,0,0.38)", 24, 0, 14);
+  const fill = ctx.createLinearGradient(x, y, x + width, y + height);
+  fill.addColorStop(0, "#030712");
+  fill.addColorStop(1, "#071026");
+  fillRoundedRect(ctx, x, y, width, height, radius, fill);
   clearShadow(ctx);
-  ctx.strokeStyle = "#fff4cf";
-  ctx.lineWidth = 10;
-  ctx.stroke();
-  ctx.strokeStyle = "rgba(120, 0, 0, 0.3)";
-  ctx.lineWidth = 6;
-  ctx.stroke();
-
-  ctx.textAlign = "center";
-  ctx.textBaseline = "middle";
-  ctx.font = `900 ${textSize}px ${POP_FONT_FAMILY}`;
-  ctx.lineJoin = "round";
-  ctx.miterLimit = 2;
-  drawShadow(ctx, "rgba(0,0,0,0.72)", 0, 11, 12);
-  ctx.strokeStyle = "#071026";
-  ctx.lineWidth = Math.max(18, textSize * 0.13);
-  ctx.strokeText(text, 0, 8, width - 150);
-  clearShadow(ctx);
-  ctx.fillStyle = "#ffffff";
-  ctx.fillText(text, 0, 8, width - 150);
+  strokeRoundedRect(ctx, x, y, width, height, radius, "rgba(255,255,255,0.25)", 4);
   ctx.restore();
 }
 
-function drawHeader(ctx: CanvasRenderingContext2D, data: PopupData) {
+function drawTitleImage(ctx: CanvasRenderingContext2D, titleImage?: HTMLImageElement) {
+  drawDarkBadge(ctx, TITLE_PANEL_X, TITLE_PANEL_Y, TITLE_PANEL_W, TITLE_PANEL_H, 24);
+
+  if (!titleImage) return;
+
+  const bounds = getOpaqueImageBounds(titleImage);
+  const maxWidth = TITLE_PANEL_W - TITLE_PADDING_X * 2;
+  const maxHeight = TITLE_PANEL_H - TITLE_PADDING_Y * 2;
+  const scale = Math.min(maxWidth / bounds.width, maxHeight / bounds.height);
+  const drawWidth = bounds.width * scale;
+  const drawHeight = bounds.height * scale;
+  const drawX = TITLE_PANEL_X + (TITLE_PANEL_W - drawWidth) / 2;
+  const drawY = TITLE_PANEL_Y + (TITLE_PANEL_H - drawHeight) / 2;
+
+  ctx.drawImage(titleImage, bounds.x, bounds.y, bounds.width, bounds.height, drawX, drawY, drawWidth, drawHeight);
+}
+
+function drawHeader(ctx: CanvasRenderingContext2D, data: PopupData, titleImage?: HTMLImageElement) {
   const padding = 120;
-  const titleX = padding;
-  const titleY = padding;
-  const titleMaxWidth = 1510;
-  const titleHeight = 224;
-  drawPopHeadline(ctx, data.title || "\u9ad8\u4fa1\u8cb7\u53d6\uff01", titleX, titleY, titleMaxWidth, titleHeight);
+  drawTitleImage(ctx, titleImage);
 
   const badgeText = `\u66f4\u65b0 ${formatUpdateDate(data.updateDate)}`;
   const badgeWidth = 660;
   const badgeHeight = 118;
   const badgeX = POSTER_WIDTH - padding - badgeWidth;
-  const badgeY = titleY + 20;
+  const badgeY = TITLE_PANEL_Y + 60;
   ctx.save();
-  drawShadow(ctx, "rgba(0,0,0,0.38)", 24, 0, 14);
-  fillRoundedRect(ctx, badgeX, badgeY, badgeWidth, badgeHeight, 22, "#071026");
-  clearShadow(ctx);
-  strokeRoundedRect(ctx, badgeX, badgeY, badgeWidth, badgeHeight, 22, "rgba(255,255,255,0.25)", 4);
+  drawDarkBadge(ctx, badgeX, badgeY, badgeWidth, badgeHeight, 22);
   drawFittedText(
     ctx,
     badgeText,
@@ -428,25 +464,27 @@ function fitPriceSize(ctx: CanvasRenderingContext2D, price: string, base: number
   return Math.max(size, price.length > 8 ? 78 : 82);
 }
 
-export async function drawPoster(canvas: HTMLCanvasElement, data: PopupData) {
-  canvas.width = POSTER_WIDTH;
-  canvas.height = POSTER_HEIGHT;
-  const ctx = canvas.getContext("2d");
-  if (!ctx) return;
-
-  ctx.clearRect(0, 0, POSTER_WIDTH, POSTER_HEIGHT);
-  drawBackground(ctx);
-  drawHeader(ctx, data);
-
+async function loadPosterAssets(data: PopupData): Promise<PosterAssets> {
   const visibleCards = data.cards.filter(
     (card) => card.name.trim() || card.price !== "" || card.image
   );
-  const loadedCards: LoadedCard[] = await Promise.all(
-    visibleCards.map(async (card) => ({
-      ...card,
-      imageElement: await loadImage(card.image)
-    }))
-  );
+  const [titleImage, cards] = await Promise.all([
+    loadImage(TITLE_IMAGE_SRC),
+    Promise.all(
+      visibleCards.map(async (card) => ({
+        ...card,
+        imageElement: await loadImage(card.image)
+      }))
+    )
+  ]);
+
+  return { titleImage, cards };
+}
+
+function drawPosterContent(ctx: CanvasRenderingContext2D, data: PopupData, assets: PosterAssets) {
+  ctx.clearRect(0, 0, POSTER_WIDTH, POSTER_HEIGHT);
+  drawBackground(ctx);
+  drawHeader(ctx, data, assets.titleImage);
 
   const padding = 120;
   const columns = Math.min(4, Math.max(2, data.columns));
@@ -457,14 +495,14 @@ export async function drawPoster(canvas: HTMLCanvasElement, data: PopupData) {
   const cardWidth = (gridWidth - gap * (columns - 1)) / columns;
   const noticeTop = POSTER_HEIGHT - 230;
   const maxGridBottom = noticeTop - 78;
-  const rows = Math.max(1, Math.ceil(loadedCards.length / columns));
+  const rows = Math.max(1, Math.ceil(assets.cards.length / columns));
   const desiredGridHeight = rows * baseMetrics.cardHeight + Math.max(0, rows - 1) * gap;
   const availableGridHeight = Math.max(420, maxGridBottom - gridTop);
   const verticalScale = Math.min(1, availableGridHeight / desiredGridHeight);
   const metrics = scaleCardMetrics(baseMetrics, verticalScale);
   const rowGap = Math.max(20, Math.round(gap * verticalScale));
 
-  loadedCards.forEach((card, index) => {
+  assets.cards.forEach((card, index) => {
     const col = index % columns;
     const row = Math.floor(index / columns);
     const x = padding + col * (cardWidth + gap);
@@ -473,4 +511,24 @@ export async function drawPoster(canvas: HTMLCanvasElement, data: PopupData) {
   });
 
   drawNotice(ctx);
+}
+
+export async function drawPoster(canvas: HTMLCanvasElement, data: PopupData, options: DrawPosterOptions = {}) {
+  if (canvas.width !== POSTER_WIDTH) canvas.width = POSTER_WIDTH;
+  if (canvas.height !== POSTER_HEIGHT) canvas.height = POSTER_HEIGHT;
+
+  const assets = await loadPosterAssets(data);
+  if (options.signal?.aborted) return;
+
+  const buffer = document.createElement("canvas");
+  buffer.width = POSTER_WIDTH;
+  buffer.height = POSTER_HEIGHT;
+  const bufferCtx = buffer.getContext("2d");
+  const ctx = canvas.getContext("2d");
+  if (!bufferCtx || !ctx) return;
+
+  drawPosterContent(bufferCtx, data, assets);
+  if (options.signal?.aborted) return;
+
+  ctx.drawImage(buffer, 0, 0);
 }
