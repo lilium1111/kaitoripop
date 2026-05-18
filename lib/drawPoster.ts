@@ -12,6 +12,8 @@ const TITLE_PANEL_W = 1100;
 const TITLE_PANEL_H = 300;
 const TITLE_PADDING_X = 40;
 const TITLE_PADDING_Y = 30;
+const INFO_PANEL_EXTRA_H = 28;
+const INFO_PANEL_NAME_RATIO = 0.38;
 
 type CardMetrics = {
   cardHeight: number;
@@ -358,6 +360,81 @@ function drawImageFit(
   ctx.drawImage(image, drawX, drawY, drawWidth, drawHeight);
 }
 
+function drawInfoPanel(
+  ctx: CanvasRenderingContext2D,
+  card: LoadedCard,
+  x: number,
+  y: number,
+  width: number,
+  height: number,
+  baseFontSize: number
+) {
+  const price = formatPrice(card.price);
+  const nameHeight = Math.round(height * INFO_PANEL_NAME_RATIO);
+  const priceHeight = height - nameHeight;
+
+  ctx.fillStyle = "rgba(0,0,0,0.78)";
+  ctx.fillRect(x, y, width, nameHeight);
+  ctx.fillStyle = "#ffffff";
+  ctx.fillRect(x, y + nameHeight, width, priceHeight);
+
+  if (card.name.trim()) {
+    ctx.save();
+    drawShadow(ctx, "rgba(0,0,0,0.58)", 0, 4, 4);
+    drawFittedText(
+      ctx,
+      card.name,
+      x + 16,
+      y,
+      width - 32,
+      nameHeight,
+      baseFontSize * 2.35,
+      30,
+      POP_FONT_FAMILY,
+      "#ffe600",
+      "center",
+      { color: "#000000", width: 8 }
+    );
+    ctx.restore();
+  }
+
+  if (price) {
+    ctx.save();
+    const maxWidth = width - 32;
+    const maxHeight = priceHeight;
+    let fontSize = baseFontSize * 3.05;
+    while (fontSize > 46) {
+      ctx.font = `900 ${fontSize}px ${POP_FONT_FAMILY}`;
+      if (ctx.measureText(price).width <= maxWidth && fontSize <= maxHeight) break;
+      fontSize -= 2;
+    }
+
+    ctx.font = `900 ${fontSize}px ${POP_FONT_FAMILY}`;
+    ctx.textAlign = "center";
+    ctx.textBaseline = "middle";
+    ctx.lineJoin = "round";
+    ctx.miterLimit = 2;
+    clearShadow(ctx);
+
+    const textX = x + width / 2;
+    const textY = y + nameHeight + priceHeight / 2;
+
+    ctx.lineWidth = 7;
+    ctx.strokeStyle = "rgba(0,0,0,0.35)";
+    ctx.strokeText(price, textX + 7, textY + 7, maxWidth);
+    ctx.fillStyle = "rgba(0,0,0,0.35)";
+    ctx.fillText(price, textX + 7, textY + 7, maxWidth);
+
+    ctx.lineWidth = 7;
+    ctx.strokeStyle = "#ffffff";
+    ctx.strokeText(price, textX, textY, maxWidth);
+
+    ctx.fillStyle = "#ff1f1f";
+    ctx.fillText(price, textX, textY, maxWidth);
+    ctx.restore();
+  }
+}
+
 function drawCard(
   ctx: CanvasRenderingContext2D,
   card: LoadedCard,
@@ -367,76 +444,46 @@ function drawCard(
   metrics: CardMetrics,
   baseFontSize: number
 ) {
-  const price = formatPrice(card.price);
-  const pad = 16;
-  const nameGap = 14;
-  const priceGap = 12;
+  const pad = 10;
   const imageX = x + pad;
   const imageY = y + pad;
   const innerWidth = width - pad * 2;
-  const nameY = imageY + metrics.imageHeight + nameGap;
-  const priceY = nameY + metrics.nameHeight + priceGap;
+  const imageHeight = metrics.cardHeight - pad * 2;
+  const infoPanelHeight = Math.min(
+    Math.round(imageHeight * 0.34),
+    Math.max(128, Math.round((metrics.nameHeight + metrics.priceHeight) * 0.88) + INFO_PANEL_EXTRA_H)
+  );
+  const infoPanelY = imageY + imageHeight - infoPanelHeight;
 
   ctx.save();
   drawShadow(ctx, "rgba(4,18,48,0.33)", 30, 0, 18);
   fillRoundedRect(ctx, x, y, width, metrics.cardHeight, 18, "#ffffff");
   clearShadow(ctx);
 
-  fillRoundedRect(ctx, imageX, imageY, innerWidth, metrics.imageHeight, 12, "#f1f5f9");
+  ctx.save();
+  roundedRect(ctx, imageX, imageY, innerWidth, imageHeight, 12);
+  ctx.clip();
+  ctx.fillStyle = "#ffffff";
+  ctx.fillRect(imageX, imageY, innerWidth, imageHeight);
+
   if (card.imageElement) {
-    drawImageFit(ctx, card.imageElement, imageX, imageY, innerWidth, metrics.imageHeight);
+    drawImageFit(ctx, card.imageElement, imageX, imageY, innerWidth, imageHeight);
   } else {
     strokeRoundedRect(
       ctx,
       imageX + innerWidth * 0.14,
-      imageY + metrics.imageHeight * 0.04,
+      imageY + imageHeight * 0.04,
       innerWidth * 0.72,
-      metrics.imageHeight * 0.92,
+      imageHeight * 0.92,
       14,
       "#cbd5e1",
       6
     );
   }
 
-  fillRoundedRect(ctx, imageX, nameY, innerWidth, metrics.nameHeight, 10, "#000000");
-  if (card.name.trim()) {
-    drawFittedText(
-      ctx,
-      card.name,
-      imageX + 10,
-      nameY,
-      innerWidth - 20,
-      metrics.nameHeight,
-      baseFontSize * 2.15,
-      34,
-      POP_FONT_FAMILY,
-      "#ffd51f",
-      "center",
-      { color: "#000000", width: 8 }
-    );
-  }
-
-  fillRoundedRect(ctx, imageX, priceY, innerWidth, metrics.priceHeight, 10, "#ffffff");
-  if (price) {
-    ctx.save();
-    ctx.textAlign = "center";
-    ctx.textBaseline = "middle";
-    ctx.font = `900 ${fitPriceSize(ctx, price, baseFontSize * 2.9)}px ${POP_FONT_FAMILY}`;
-    ctx.lineJoin = "round";
-    const textX = imageX + innerWidth / 2;
-    const textY = priceY + metrics.priceHeight / 2 + 2;
-    ctx.shadowColor = "rgba(0,0,0,0.45)";
-    ctx.shadowBlur = 0;
-    ctx.shadowOffsetX = 5;
-    ctx.shadowOffsetY = 5;
-    ctx.lineWidth = 8;
-    ctx.strokeStyle = "#ffffff";
-    ctx.strokeText(price, textX, textY, innerWidth - 24);
-    clearShadow(ctx);
-    ctx.fillStyle = "#ff1010";
-    ctx.fillText(price, textX, textY, innerWidth - 24);
-    ctx.restore();
-  }
+  drawInfoPanel(ctx, card, imageX, infoPanelY, innerWidth, infoPanelHeight, baseFontSize);
+  ctx.restore();
+  strokeRoundedRect(ctx, imageX, imageY, innerWidth, imageHeight, 12, "rgba(15,23,42,0.1)", 3);
 
   ctx.restore();
 }
@@ -455,13 +502,6 @@ function drawNotice(ctx: CanvasRenderingContext2D) {
   strokeRoundedRect(ctx, x, y, width, height, 28, "rgba(255,255,255,0.72)", 4);
   drawFittedText(ctx, text, x + 56, y, width - 112, height, 48, 34, POP_FONT_FAMILY, "#071a3c", "center");
   ctx.restore();
-}
-
-function fitPriceSize(ctx: CanvasRenderingContext2D, price: string, base: number) {
-  let size = base;
-  if (price.length > 10) size -= 12;
-  else if (price.length > 8) size -= 6;
-  return Math.max(size, price.length > 8 ? 78 : 82);
 }
 
 async function loadPosterAssets(data: PopupData): Promise<PosterAssets> {
