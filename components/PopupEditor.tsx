@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { CardForm } from "@/components/CardForm";
 import { PopupPreview } from "@/components/PopupPreview";
+import { SiteNav } from "@/components/SiteNav";
 import { useLocalStorage } from "@/components/useLocalStorage";
 import { copyPosterToClipboard, exportToPng } from "@/lib/exportToPng";
 import { readFileAsDataUrl } from "@/lib/readFileAsDataUrl";
@@ -144,13 +145,16 @@ export function PopupEditor() {
     <main className="min-h-screen overflow-x-hidden bg-[#eef4ff] px-4 py-6 text-slate-900 lg:px-8 xl:h-screen xl:overflow-hidden">
       <div className="mx-auto grid max-w-[1680px] gap-6 xl:h-full xl:grid-cols-[520px_minmax(0,1fr)]">
         <aside className="min-w-0 space-y-5 xl:h-full xl:overflow-y-auto xl:overflow-x-hidden xl:pr-2">
-          <div>
-            <h1 className="text-2xl font-black tracking-normal">
-              {"\u8cb7\u53d6\u30dd\u30c3\u30d7\u753b\u50cf\u30b8\u30a7\u30cd\u30ec\u30fc\u30bf\u30fc"}
-            </h1>
-            <p className="mt-1 text-sm text-slate-600">
-              {"\u5370\u5237\u5411\u3051 A4 \u7e26\u30b5\u30a4\u30ba\u3068 X \u6295\u7a3f\u5411\u3051\u306e\u9ad8\u89e3\u50cf\u5ea6 PNG \u3092\u4f5c\u6210\u3057\u307e\u3059\u3002"}
-            </p>
+          <div className="space-y-3">
+            <SiteNav />
+            <div>
+              <h1 className="text-2xl font-black tracking-normal">
+                {"\u8cb7\u53d6\u30dd\u30c3\u30d7\u753b\u50cf\u30b8\u30a7\u30cd\u30ec\u30fc\u30bf\u30fc"}
+              </h1>
+              <p className="mt-1 text-sm text-slate-600">
+                {"\u5370\u5237\u5411\u3051 A4 \u7e26\u30b5\u30a4\u30ba\u3068 X \u6295\u7a3f\u5411\u3051\u306e\u9ad8\u89e3\u50cf\u5ea6 PNG \u3092\u4f5c\u6210\u3057\u307e\u3059\u3002"}
+              </p>
+            </div>
           </div>
 
           <section className="rounded-[8px] border border-slate-200 bg-white p-4 shadow-sm xl:sticky xl:top-0 xl:z-20 xl:shadow-lg">
