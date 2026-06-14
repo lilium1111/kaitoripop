@@ -5,6 +5,9 @@ export type EventPrize = {
 
 export type EventPosterData = {
   title: string;
+  eventTitleScale: number;
+  topWelcomeMessages: string[];
+  supportMessages: string[];
   eventDate: string;
   startTime: string;
   capacity: string;

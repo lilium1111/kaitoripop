@@ -157,64 +157,142 @@ textarea {
 }
 
 .event-poster {
-  font-family: "Yu Gothic", "Hiragino Kaku Gothic ProN", Meiryo, system-ui, sans-serif;
+  font-family: "Yu Gothic", "Hiragino Maru Gothic ProN", "Hiragino Kaku Gothic ProN", Meiryo, system-ui, sans-serif;
   font-weight: 500;
   print-color-adjust: exact;
   -webkit-print-color-adjust: exact;
 }
 
 .event-poster-title {
-  font-family: "Arial Black", "Yu Gothic", "Hiragino Kaku Gothic ProN", Meiryo, sans-serif;
+  color: #713f12;
+  font-family: "Arial Black", "Hiragino Maru Gothic ProN", "Yu Gothic", Meiryo, sans-serif;
   white-space: pre-wrap;
   overflow-wrap: anywhere;
-  -webkit-text-stroke: 0.55px rgba(255, 255, 255, 0.72);
+  word-break: auto-phrase;
+  -webkit-text-stroke: 0.4px rgba(255, 255, 255, 0.72);
   paint-order: stroke fill;
   text-shadow:
-    0 2px 0 rgba(0, 0, 0, 0.8),
-    0 6px 18px rgba(0, 0, 0, 0.82),
-    0 0 28px rgba(8, 47, 73, 0.62);
+    0 2px 0 rgba(255, 255, 255, 0.92),
+    0 8px 18px rgba(251, 146, 60, 0.26),
+    0 0 24px rgba(254, 240, 138, 0.48);
+}
+
+.event-poster.event-title-scale-large .event-poster-support-chips {
+  margin-top: 3mm !important;
+}
+
+.event-poster.event-title-scale-large .event-poster-welcome-badges {
+  gap: 1.5mm;
+}
+
+.event-poster-welcome-badges {
+  display: flex;
+  max-width: 124mm;
+  flex-wrap: wrap;
+  gap: 2mm;
+}
+
+.event-poster-welcome-badge {
+  display: inline-flex;
+  align-items: center;
+  border: 2px solid rgba(251, 191, 36, 0.82);
+  border-radius: 999px;
+  background: linear-gradient(135deg, #fff7ad 0%, #fed7aa 58%, #bbf7d0 100%);
+  box-shadow:
+    0 8px 18px rgba(217, 119, 6, 0.16),
+    inset 0 1px 0 rgba(255, 255, 255, 0.72);
+  color: #854d0e;
+  font-size: 15pt;
+  font-weight: 900;
+  line-height: 1;
+  padding: 2.4mm 4.5mm;
+}
+
+.event-poster-support-chips span {
+  border: 1.5px solid rgba(16, 185, 129, 0.34);
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.82);
+  box-shadow: 0 5px 14px rgba(15, 118, 110, 0.1);
+  color: #0f766e;
+  font-size: 10.5pt;
+  font-weight: 900;
+  line-height: 1;
+  padding: 2.2mm 3.2mm;
+}
+
+.event-poster-schedule-card {
+  border: 2px solid rgba(251, 191, 36, 0.62);
+  background:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.92), rgba(255, 247, 237, 0.9)),
+    radial-gradient(circle at 22% 12%, rgba(254, 240, 138, 0.68), transparent 42%);
+  box-shadow:
+    0 16px 34px rgba(180, 83, 9, 0.18),
+    inset 0 1px 0 rgba(255, 255, 255, 0.78);
+  color: #0f766e;
 }
 
 .event-poster-detail-panel {
+  border: 2px solid rgba(251, 191, 36, 0.52);
+  background:
+    linear-gradient(180deg, rgba(255, 253, 244, 0.95), rgba(255, 247, 237, 0.93)),
+    radial-gradient(circle at 100% 0%, rgba(187, 247, 208, 0.48), transparent 36%);
   box-shadow:
-    0 22px 50px rgba(0, 0, 0, 0.42),
-    inset 0 1px 0 rgba(255, 255, 255, 0.12);
+    0 22px 50px rgba(180, 83, 9, 0.2),
+    inset 0 1px 0 rgba(255, 255, 255, 0.74);
 }
 
 .event-poster-main-detail {
-  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.1);
+  border: 1.5px solid rgba(251, 191, 36, 0.34);
+  background: rgba(255, 251, 235, 0.82);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.7);
+  color: #374151;
+}
+
+.event-poster-main-detail > p:first-child {
+  color: #b45309;
 }
 
 .event-poster-body-text {
+  color: #334155;
   text-shadow:
-    0 1px 2px rgba(0, 0, 0, 0.68),
-    0 5px 14px rgba(0, 0, 0, 0.36);
+    0 1px 0 rgba(255, 255, 255, 0.72),
+    0 4px 12px rgba(251, 191, 36, 0.12);
 }
 
 .event-poster-fallback {
   background:
-    radial-gradient(circle at 28% 22%, rgba(56, 189, 248, 0.72), transparent 28%),
-    radial-gradient(circle at 74% 36%, rgba(251, 191, 36, 0.45), transparent 24%),
-    linear-gradient(135deg, #07111f 0%, #1e1b4b 42%, #7c2d12 100%);
+    radial-gradient(circle at 20% 18%, rgba(254, 240, 138, 0.88), transparent 24%),
+    radial-gradient(circle at 82% 24%, rgba(187, 247, 208, 0.72), transparent 26%),
+    radial-gradient(circle at 52% 62%, rgba(125, 211, 252, 0.34), transparent 32%),
+    linear-gradient(135deg, #fff7ed 0%, #fef3c7 42%, #d1fae5 100%);
+}
+
+.event-poster-image-soften {
+  background:
+    linear-gradient(180deg, rgba(255, 247, 237, 0.72), rgba(255, 251, 235, 0.58)),
+    radial-gradient(circle at 15% 18%, rgba(254, 240, 138, 0.54), transparent 28%);
 }
 
 .event-poster-vignette {
   background:
-    linear-gradient(180deg, rgba(2, 6, 23, 0.46) 0%, rgba(2, 6, 23, 0.08) 42%, rgba(2, 6, 23, 0.78) 100%),
-    radial-gradient(circle at 50% 42%, transparent 0%, rgba(0, 0, 0, 0.58) 100%);
+    radial-gradient(circle at 18% 14%, rgba(255, 255, 255, 0.5), transparent 24%),
+    radial-gradient(circle at 88% 8%, rgba(255, 255, 255, 0.42), transparent 22%),
+    linear-gradient(180deg, rgba(255, 255, 255, 0.16) 0%, rgba(254, 243, 199, 0.12) 54%, rgba(251, 191, 36, 0.16) 100%);
 }
 
 .event-poster-value-group {
-  border: 1.8px solid rgba(255, 255, 255, 0.44);
+  border: 1.8px solid rgba(20, 184, 166, 0.28);
   border-radius: 7px;
-  background: rgba(8, 18, 36, 0.78);
+  background: rgba(255, 255, 255, 0.76);
   padding: 4mm 4.5mm;
-  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.12);
+  box-shadow:
+    0 10px 24px rgba(15, 118, 110, 0.1),
+    inset 0 1px 0 rgba(255, 255, 255, 0.82);
 }
 
 .event-poster-entry-fee {
   display: grid;
-  grid-template-columns: minmax(34mm, 0.82fr) minmax(0, 1.55fr);
+  grid-template-columns: minmax(0, 0.36fr) minmax(0, 0.64fr);
   align-items: baseline;
   gap: 5.5mm;
   padding-block: 1mm 2.5mm;
@@ -222,27 +300,28 @@ textarea {
 
 .event-poster-entry-fee span,
 .event-poster-prizes-heading {
-  color: #e0f7ff;
+  color: #0f766e;
   font-size: 19pt;
   font-weight: 900;
   line-height: 1.12;
 }
 
 .event-poster-entry-fee strong {
-  color: #fff;
+  color: #c2410c;
   font-size: 25pt;
   font-weight: 900;
   line-height: 1;
   text-align: right;
-  text-shadow: 0 2px 6px rgba(0, 0, 0, 0.65);
+  text-shadow: 0 2px 0 rgba(255, 255, 255, 0.78);
 }
 
 .event-poster-prize-row {
   display: grid;
-  grid-template-columns: minmax(34mm, 0.82fr) minmax(0, 1.55fr);
+  grid-template-columns: minmax(0, 0.36fr) minmax(0, 0.64fr);
   align-items: start;
   gap: 5.5mm;
-  border-top: 1.4px solid rgba(255, 255, 255, 0.18);
+  border-top: 1.4px solid rgba(20, 184, 166, 0.18);
+  min-height: 10mm;
   padding-top: 2.4mm;
 }
 
@@ -254,7 +333,7 @@ textarea {
 .event-poster-prize-row span {
   min-width: 0;
   overflow-wrap: anywhere;
-  color: #f0fbff;
+  color: #475569;
   font-size: 19pt;
   font-weight: 800;
   line-height: 1.18;
@@ -263,12 +342,165 @@ textarea {
 .event-poster-prize-row strong {
   min-width: 0;
   overflow-wrap: anywhere;
-  color: #fff;
+  color: #0f172a;
   font-size: 21pt;
   font-weight: 900;
   line-height: 1.16;
   text-align: right;
-  text-shadow: 0 2px 6px rgba(0, 0, 0, 0.6);
+  text-shadow: 0 1px 0 rgba(255, 255, 255, 0.82);
+}
+
+.event-poster.prize-count-compact .event-poster-welcome-badges {
+  gap: 1.5mm;
+}
+
+.event-poster.prize-count-compact .event-poster-welcome-badge {
+  font-size: 13.5pt;
+  padding: 2mm 3.7mm;
+}
+
+.event-poster.prize-count-compact .event-poster-support-chips {
+  gap: 1.5mm !important;
+  margin-top: 3.5mm !important;
+}
+
+.event-poster.prize-count-compact .event-poster-support-chips span {
+  font-size: 9.6pt;
+  padding: 1.8mm 2.8mm;
+}
+
+.event-poster.prize-count-compact .event-poster-detail-panel {
+  padding: 4.5mm !important;
+}
+
+.event-poster.prize-count-compact .event-poster-main-detail {
+  padding: 3mm 4mm !important;
+}
+
+.event-poster.prize-count-compact .event-poster-body-text {
+  font-size: 14pt !important;
+  line-height: 1.32 !important;
+}
+
+.event-poster.prize-count-compact .event-poster-value-group {
+  margin-top: 2mm !important;
+  padding: 3mm 3.5mm;
+}
+
+.event-poster.prize-count-compact .event-poster-entry-fee {
+  gap: 4mm;
+  padding-block: 0.4mm 1.6mm;
+}
+
+.event-poster.prize-count-compact .event-poster-entry-fee span,
+.event-poster.prize-count-compact .event-poster-prizes-heading {
+  font-size: 16pt;
+}
+
+.event-poster.prize-count-compact .event-poster-entry-fee strong {
+  font-size: 21pt;
+}
+
+.event-poster.prize-count-compact .event-poster-prize-list {
+  gap: 1.2mm !important;
+  margin-top: 1.4mm !important;
+}
+
+.event-poster.prize-count-compact .event-poster-prize-row {
+  gap: 4mm;
+  min-height: 8mm;
+  padding-top: 1.6mm;
+}
+
+.event-poster.prize-count-compact .event-poster-prize-row span {
+  font-size: 16pt;
+  line-height: 1.12;
+}
+
+.event-poster.prize-count-compact .event-poster-prize-row strong {
+  font-size: 17pt;
+  line-height: 1.1;
+}
+
+.event-poster.prize-count-dense .event-poster-welcome-badges {
+  gap: 1.1mm;
+}
+
+.event-poster.prize-count-dense .event-poster-welcome-badge {
+  font-size: 12.5pt;
+  padding: 1.7mm 3.2mm;
+}
+
+.event-poster.prize-count-dense .event-poster-title {
+  margin-top: 2mm !important;
+}
+
+.event-poster.prize-count-dense .event-poster-support-chips {
+  gap: 1.1mm !important;
+  margin-top: 3mm !important;
+}
+
+.event-poster.prize-count-dense .event-poster-support-chips span {
+  font-size: 8.8pt;
+  padding: 1.4mm 2.3mm;
+}
+
+.event-poster.prize-count-dense .event-poster-detail-panel {
+  padding: 3.5mm !important;
+}
+
+.event-poster.prize-count-dense .event-poster-main-detail {
+  padding: 2.3mm 3.2mm !important;
+}
+
+.event-poster.prize-count-dense .event-poster-body-text {
+  font-size: 12.5pt !important;
+  line-height: 1.24 !important;
+}
+
+.event-poster.prize-count-dense .event-poster-value-group {
+  margin-top: 1.4mm !important;
+  padding: 2.4mm 3mm;
+}
+
+.event-poster.prize-count-dense .event-poster-entry-fee {
+  gap: 3mm;
+  padding-block: 0 1.1mm;
+}
+
+.event-poster.prize-count-dense .event-poster-entry-fee span,
+.event-poster.prize-count-dense .event-poster-prizes-heading {
+  font-size: 13.5pt;
+}
+
+.event-poster.prize-count-dense .event-poster-entry-fee strong {
+  font-size: 18pt;
+}
+
+.event-poster.prize-count-dense .event-poster-prize-list {
+  gap: 0.8mm !important;
+  margin-top: 1mm !important;
+}
+
+.event-poster.prize-count-dense .event-poster-prize-row {
+  gap: 3mm;
+  min-height: 6.8mm;
+  padding-top: 1.1mm;
+}
+
+.event-poster.prize-count-dense .event-poster-prize-row span {
+  font-size: 12.8pt;
+  line-height: 1.08;
+}
+
+.event-poster.prize-count-dense .event-poster-prize-row strong {
+  font-size: 13.8pt;
+  line-height: 1.08;
+}
+
+.event-poster-qr-box {
+  border: 1.5px solid rgba(15, 118, 110, 0.24);
+  box-shadow: 0 10px 20px rgba(15, 118, 110, 0.12);
 }
 
 .event-poster-copy {

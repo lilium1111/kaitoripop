@@ -11,6 +11,10 @@ import type { EventPosterData, EventPrize } from "@/types/eventPoster";
 const STORAGE_KEY = "kaitori-event-poster-v1";
 const EVENT_POSTER_WIDTH_PX = (210 / 25.4) * 96;
 const EVENT_POSTER_HEIGHT_PX = (297 / 25.4) * 96;
+const EVENT_TITLE_SCALE_MIN = 50;
+const EVENT_TITLE_SCALE_MAX = 150;
+const DEFAULT_TOP_WELCOME_MESSAGES = ["初心者歓迎/競技大会"];
+const DEFAULT_SUPPORT_MESSAGES = ["ルールが不安でも大丈夫", "見学もお気軽に", "とかそういうメッセージ"];
 
 type LegacyEventPosterData = Partial<EventPosterData> & {
   details?: string;
@@ -19,13 +23,19 @@ type LegacyEventPosterData = Partial<EventPosterData> & {
 };
 
 const initialData: EventPosterData = {
-  title: "スペシャルトーナメント《未知なる彼方へ！シーズン》",
+  title: "大会名",
+  eventTitleScale: 81,
+  topWelcomeMessages: DEFAULT_TOP_WELCOME_MESSAGES,
+  supportMessages: DEFAULT_SUPPORT_MESSAGES,
   eventDate: "6月27日（土）",
   startTime: "11:00",
   capacity: "40名",
   entryFee: "1000円",
-  prizes: [{ label: "参加賞", value: "1000円" }],
-  summary: "スイスドロー形式で開催します。初心者の方もお気軽にご参加ください。",
+  prizes: [
+    { label: "参加賞", value: "1000円" },
+    { label: "優勝", value: "3000円分の商品券" }
+  ],
+  summary: "スイスドロー形式で開催します。\n初心者の方もお気軽にご参加ください。",
   officialUrl: "",
   backgroundScale: 115,
   backgroundX: 0,
@@ -33,19 +43,42 @@ const initialData: EventPosterData = {
   overlayOpacity: 42
 };
 
+function clampEventTitleScale(value: unknown) {
+  const numericValue = typeof value === "number" ? value : Number(value);
+  if (!Number.isFinite(numericValue)) return initialData.eventTitleScale;
+  return Math.min(EVENT_TITLE_SCALE_MAX, Math.max(EVENT_TITLE_SCALE_MIN, Math.round(numericValue)));
+}
+
 function normalizeData(data: LegacyEventPosterData): EventPosterData {
   const rest = { ...data };
   delete rest.backgroundImage;
   delete rest.details;
   delete rest.venue;
   delete rest.weekday;
+  delete rest.eventTitleScale;
+  delete rest.topWelcomeMessages;
+  delete rest.supportMessages;
   const prizes = Array.isArray(data.prizes)
     ? data.prizes.map((prize) => ({
         label: typeof prize?.label === "string" ? prize.label : "",
         value: typeof prize?.value === "string" ? prize.value : ""
       }))
     : initialData.prizes;
-  return { ...initialData, ...rest, prizes: prizes.length > 0 ? prizes : [{ label: "", value: "" }], backgroundImage: undefined };
+  const topWelcomeMessages = Array.isArray(data.topWelcomeMessages)
+    ? data.topWelcomeMessages.map((message) => (typeof message === "string" ? message : ""))
+    : initialData.topWelcomeMessages;
+  const supportMessages = Array.isArray(data.supportMessages)
+    ? data.supportMessages.map((message) => (typeof message === "string" ? message : ""))
+    : initialData.supportMessages;
+  return {
+    ...initialData,
+    ...rest,
+    eventTitleScale: data.eventTitleScale === undefined ? initialData.eventTitleScale : clampEventTitleScale(data.eventTitleScale),
+    topWelcomeMessages,
+    supportMessages,
+    prizes: prizes.length > 0 ? prizes : [{ label: "", value: "" }],
+    backgroundImage: undefined
+  };
 }
 
 type FieldName = keyof Pick<
@@ -74,6 +107,58 @@ function FormSection({ title, defaultOpen = true, children }: FormSectionProps) 
   );
 }
 
+type MessageListEditorProps = {
+  addLabel: string;
+  messages: string[];
+  placeholder: string;
+  onAdd: () => void;
+  onMove: (index: number, direction: -1 | 1) => void;
+  onRemove: (index: number) => void;
+  onUpdate: (index: number, value: string) => void;
+};
+
+function MessageListEditor({
+  addLabel,
+  messages,
+  placeholder,
+  onAdd,
+  onMove,
+  onRemove,
+  onUpdate
+}: MessageListEditorProps) {
+  return (
+    <div className="space-y-3">
+      {messages.map((message, index) => (
+        <div className="rounded-[8px] border border-slate-200 bg-slate-50 p-3" key={index}>
+          <label className="grid min-w-0 gap-1 text-sm font-semibold text-slate-700">
+            メッセージ {index + 1}
+            <input
+              className="h-10 min-w-0 rounded border border-slate-300 bg-white px-3 font-normal"
+              placeholder={placeholder}
+              value={message}
+              onChange={(event) => onUpdate(index, event.target.value)}
+            />
+          </label>
+          <div className="mt-3 flex flex-wrap gap-2">
+            <button aria-label="このメッセージを上へ移動" className="h-10 rounded border border-slate-300 bg-white px-3 text-sm font-bold text-slate-700 disabled:opacity-40" disabled={index === 0} onClick={() => onMove(index, -1)} type="button">
+              ↑
+            </button>
+            <button aria-label="このメッセージを下へ移動" className="h-10 rounded border border-slate-300 bg-white px-3 text-sm font-bold text-slate-700 disabled:opacity-40" disabled={index === messages.length - 1} onClick={() => onMove(index, 1)} type="button">
+              ↓
+            </button>
+            <button aria-label="このメッセージを削除" className="h-10 rounded border border-red-200 bg-white px-3 text-sm font-bold text-red-700" onClick={() => onRemove(index)} type="button">
+              削除
+            </button>
+          </div>
+        </div>
+      ))}
+      <button className="h-10 rounded bg-blue-700 px-4 text-sm font-bold text-white" onClick={onAdd} type="button">
+        {addLabel}
+      </button>
+    </div>
+  );
+}
+
 function getPosterContentWeight(data: EventPosterData) {
   const prizeWeight = data.prizes.reduce((total, prize) => total + prize.label.length + prize.value.length + 22, 0);
   return data.summary.length + prizeWeight + (data.summary.match(/\n/g) || []).length * 18;
@@ -85,6 +170,9 @@ export function EventPosterEditor() {
   const previewFrameRef = useRef<HTMLDivElement>(null);
   const { save, load } = useLocalStorage<EventPosterData>(STORAGE_KEY);
   const mayOverflowPoster = getPosterContentWeight(data) > 820;
+  const visiblePrizeCount = data.prizes.filter((prize) => prize.label.trim().length > 0 || prize.value.trim().length > 0).length;
+  const hasManyPrizes = visiblePrizeCount > 10;
+  const mayTitleOverflow = data.eventTitleScale > 130 && data.title.trim().length > 18;
 
   useEffect(() => {
     const saved = load();
@@ -123,7 +211,7 @@ export function EventPosterEditor() {
     setData((current) => ({ ...current, [field]: value }));
   };
 
-  const updateNumber = (field: "backgroundScale" | "backgroundX" | "backgroundY" | "overlayOpacity", value: number) => {
+  const updateNumber = (field: "eventTitleScale" | "backgroundScale" | "backgroundX" | "backgroundY" | "overlayOpacity", value: number) => {
     setData((current) => ({ ...current, [field]: value }));
   };
 
@@ -153,6 +241,32 @@ export function EventPosterEditor() {
       const [target] = prizes.splice(index, 1);
       prizes.splice(nextIndex, 0, target);
       return { ...current, prizes };
+    });
+  };
+
+  const updateMessage = (field: "topWelcomeMessages" | "supportMessages", index: number, value: string) => {
+    setData((current) => ({
+      ...current,
+      [field]: current[field].map((message, messageIndex) => (messageIndex === index ? value : message))
+    }));
+  };
+
+  const addMessage = (field: "topWelcomeMessages" | "supportMessages") => {
+    setData((current) => ({ ...current, [field]: [...current[field], ""] }));
+  };
+
+  const removeMessage = (field: "topWelcomeMessages" | "supportMessages", index: number) => {
+    setData((current) => ({ ...current, [field]: current[field].filter((_, messageIndex) => messageIndex !== index) }));
+  };
+
+  const moveMessage = (field: "topWelcomeMessages" | "supportMessages", index: number, direction: -1 | 1) => {
+    setData((current) => {
+      const nextIndex = index + direction;
+      if (nextIndex < 0 || nextIndex >= current[field].length) return current;
+      const messages = [...current[field]];
+      const [target] = messages.splice(index, 1);
+      messages.splice(nextIndex, 0, target);
+      return { ...current, [field]: messages };
     });
   };
 
@@ -203,6 +317,10 @@ export function EventPosterEditor() {
                 大会タイトル
                 <textarea className="min-h-20 resize-y rounded border border-slate-300 px-3 py-2 font-normal" rows={2} value={data.title} onChange={(event) => updateField("title", event.target.value)} />
               </label>
+              <label className="grid gap-1 text-sm font-semibold text-slate-700 sm:col-span-2">
+                大会名の文字サイズ {data.eventTitleScale}%
+                <input min={EVENT_TITLE_SCALE_MIN} max={EVENT_TITLE_SCALE_MAX} step={1} type="range" value={data.eventTitleScale} onChange={(event) => updateNumber("eventTitleScale", Number(event.target.value))} />
+              </label>
               <label className="grid gap-1 text-sm font-semibold text-slate-700">
                 開催日
                 <input className="h-10 rounded border border-slate-300 px-3 font-normal" placeholder="6月27日（土） / 毎週土曜日" value={data.eventDate} onChange={(event) => updateField("eventDate", event.target.value)} />
@@ -228,6 +346,30 @@ export function EventPosterEditor() {
                 <input className="h-10 rounded border border-slate-300 px-3 font-normal" placeholder="https://example.com" value={data.officialUrl} onChange={(event) => updateField("officialUrl", event.target.value)} />
               </label>
             </div>
+          </FormSection>
+
+          <FormSection title="上部の歓迎メッセージ">
+            <MessageListEditor
+              addLabel="歓迎メッセージを追加"
+              messages={data.topWelcomeMessages}
+              placeholder="初心者歓迎！"
+              onAdd={() => addMessage("topWelcomeMessages")}
+              onMove={(index, direction) => moveMessage("topWelcomeMessages", index, direction)}
+              onRemove={(index) => removeMessage("topWelcomeMessages", index)}
+              onUpdate={(index, value) => updateMessage("topWelcomeMessages", index, value)}
+            />
+          </FormSection>
+
+          <FormSection title="タイトル下の案内メッセージ">
+            <MessageListEditor
+              addLabel="案内メッセージを追加"
+              messages={data.supportMessages}
+              placeholder="ルールが不安でも大丈夫"
+              onAdd={() => addMessage("supportMessages")}
+              onMove={(index, direction) => moveMessage("supportMessages", index, direction)}
+              onRemove={(index) => removeMessage("supportMessages", index)}
+              onUpdate={(index, value) => updateMessage("supportMessages", index, value)}
+            />
           </FormSection>
 
           <FormSection title="景品">
@@ -263,9 +405,9 @@ export function EventPosterEditor() {
             </div>
           </FormSection>
 
-          {mayOverflowPoster ? (
+          {mayOverflowPoster || hasManyPrizes || mayTitleOverflow ? (
             <div className="rounded-[8px] border border-amber-300 bg-amber-50 px-4 py-3 text-sm font-bold leading-relaxed text-amber-900">
-              大会詳細が長すぎるため、A4用紙内に収まらない可能性があります
+              大会名の文字サイズ・大会詳細・景品行の量により、A4用紙内に収まらない可能性があります
             </div>
           ) : null}
 
