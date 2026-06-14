@@ -338,7 +338,7 @@ export function EventPosterEditor() {
                 <input className="h-10 rounded border border-slate-300 px-3 font-normal" value={data.entryFee} onChange={(event) => updateField("entryFee", event.target.value)} />
               </label>
               <label className="grid gap-1 text-sm font-semibold text-slate-700 sm:col-span-2">
-                大会詳細
+                詳細
                 <textarea className="min-h-32 resize-y rounded border border-slate-300 px-3 py-2 font-normal" rows={5} value={data.summary} onChange={(event) => updateField("summary", event.target.value)} />
               </label>
               <label className="grid gap-1 text-sm font-semibold text-slate-700 sm:col-span-2">
@@ -407,7 +407,7 @@ export function EventPosterEditor() {
 
           {mayOverflowPoster || hasManyPrizes || mayTitleOverflow ? (
             <div className="rounded-[8px] border border-amber-300 bg-amber-50 px-4 py-3 text-sm font-bold leading-relaxed text-amber-900">
-              大会名の文字サイズ・大会詳細・景品行の量により、A4用紙内に収まらない可能性があります
+              大会名の文字サイズ・詳細・景品行の量により、A4用紙内に収まらない可能性があります
             </div>
           ) : null}
 

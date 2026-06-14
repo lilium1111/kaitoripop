@@ -164,7 +164,7 @@ export function EventPosterPreview({ data }: EventPosterPreviewProps) {
           <div className="min-w-0">
             {hasSummary ? (
               <div className="rounded-[7px] px-[5mm] py-[4mm] event-poster-main-detail">
-                <p className="text-[12pt] font-black">大会詳細</p>
+                <p className="text-[12pt] font-black">詳細</p>
                 <p className="event-poster-copy event-poster-body-text mt-[2mm] text-[16pt] font-bold leading-[1.42]">
                   {data.summary}
                 </p>
