@@ -11,6 +11,8 @@ import type { EventPosterData, EventPrize } from "@/types/eventPoster";
 const STORAGE_KEY = "kaitori-event-poster-v1";
 const EVENT_POSTER_WIDTH_PX = (210 / 25.4) * 96;
 const EVENT_POSTER_HEIGHT_PX = (297 / 25.4) * 96;
+const EVENT_POSTER_EXPORT_WIDTH = 1240;
+const EVENT_POSTER_EXPORT_HEIGHT = 1754;
 const EVENT_TITLE_SCALE_MIN = 50;
 const EVENT_TITLE_SCALE_MAX = 150;
 const DEFAULT_TOP_WELCOME_MESSAGES = ["初心者歓迎/競技大会"];
@@ -92,6 +94,8 @@ type FieldName = keyof Pick<
   | "officialUrl"
 >;
 
+type ImageGenerationAction = "copy" | "download" | "share";
+
 type FormSectionProps = {
   title: string;
   defaultOpen?: boolean;
@@ -164,10 +168,57 @@ function getPosterContentWeight(data: EventPosterData) {
   return data.summary.length + prizeWeight + (data.summary.match(/\n/g) || []).length * 18;
 }
 
+function waitForAnimationFrame() {
+  return new Promise<void>((resolve) => {
+    requestAnimationFrame(() => resolve());
+  });
+}
+
+async function waitForPosterImages(element: HTMLElement) {
+  const images = Array.from(element.querySelectorAll("img"));
+  await Promise.all(
+    images.map(async (image) => {
+      if (image.complete && image.naturalWidth > 0) return;
+      if (typeof image.decode === "function") {
+        await image.decode();
+      }
+      if (!image.complete || image.naturalWidth === 0) {
+        throw new Error("Poster image failed to load.");
+      }
+    })
+  );
+}
+
+async function waitForQrCode(element: HTMLElement, officialUrl: string) {
+  if (!officialUrl.trim()) return;
+
+  for (let attempt = 0; attempt < 30; attempt += 1) {
+    const qrImage = element.querySelector<HTMLImageElement>('img[alt="公式サイトQRコード"]');
+    if (qrImage?.complete && qrImage.naturalWidth > 0) return;
+    await waitForAnimationFrame();
+  }
+
+  throw new Error("QR code is not ready.");
+}
+
+function getPosterFileName(title: string) {
+  const safeTitle = title
+    .trim()
+    .replace(/[\\/:*?"<>|]/g, "")
+    .replace(/\s+/g, "-")
+    .slice(0, 60);
+  return safeTitle ? `${safeTitle}-event-poster.png` : "event-poster.png";
+}
+
 export function EventPosterEditor() {
   const [data, setData] = useState<EventPosterData>(initialData);
   const [posterScale, setPosterScale] = useState(0.62);
+  const [imageGenerationAction, setImageGenerationAction] = useState<ImageGenerationAction | null>(null);
+  const [imageExportMessage, setImageExportMessage] = useState("");
+  const [canCopyImage, setCanCopyImage] = useState(false);
+  const [canShareImage, setCanShareImage] = useState(false);
   const previewFrameRef = useRef<HTMLDivElement>(null);
+  const exportPosterRef = useRef<HTMLDivElement>(null);
   const { save, load } = useLocalStorage<EventPosterData>(STORAGE_KEY);
   const mayOverflowPoster = getPosterContentWeight(data) > 820;
   const visiblePrizeCount = data.prizes.filter((prize) => prize.label.trim().length > 0 || prize.value.trim().length > 0).length;
@@ -206,6 +257,28 @@ export function EventPosterEditor() {
       window.removeEventListener("resize", updateScale);
     };
   }, []);
+
+  useEffect(() => {
+    setCanCopyImage("ClipboardItem" in window && Boolean(navigator.clipboard?.write));
+
+    if (typeof navigator.canShare !== "function" || typeof File === "undefined") {
+      setCanShareImage(false);
+      return;
+    }
+
+    const testFile = new File([""], "event-poster.png", { type: "image/png" });
+    setCanShareImage(navigator.canShare({ files: [testFile] }));
+  }, []);
+
+  useEffect(() => {
+    if (!imageExportMessage) return;
+
+    const timer = window.setTimeout(() => {
+      setImageExportMessage("");
+    }, imageExportMessage.includes("しました") || imageExportMessage.includes("開きました") ? 3000 : 5000);
+
+    return () => window.clearTimeout(timer);
+  }, [imageExportMessage]);
 
   const updateField = (field: FieldName, value: string) => {
     setData((current) => ({ ...current, [field]: value }));
@@ -268,6 +341,117 @@ export function EventPosterEditor() {
       messages.splice(nextIndex, 0, target);
       return { ...current, [field]: messages };
     });
+  };
+
+  const createPosterPngBlob = async () => {
+    const host = exportPosterRef.current;
+    const posterElement = host?.querySelector<HTMLElement>(".event-poster");
+    if (!posterElement) throw new Error("Poster export element is not ready.");
+
+    await waitForAnimationFrame();
+    await waitForAnimationFrame();
+    await document.fonts.ready;
+    await waitForQrCode(posterElement, data.officialUrl);
+    await waitForPosterImages(posterElement);
+
+    const { toBlob } = await import("html-to-image");
+    const blob = await toBlob(posterElement, {
+      backgroundColor: "#fff7ed",
+      cacheBust: true,
+      canvasHeight: EVENT_POSTER_EXPORT_HEIGHT,
+      canvasWidth: EVENT_POSTER_EXPORT_WIDTH,
+      height: posterElement.getBoundingClientRect().height,
+      pixelRatio: 1,
+      width: posterElement.getBoundingClientRect().width
+    });
+
+    if (!blob) throw new Error("Failed to create poster image.");
+    return blob;
+  };
+
+  const handleCopyPosterImage = async () => {
+    if (imageGenerationAction) return;
+
+    setImageGenerationAction("copy");
+    setImageExportMessage("");
+
+    try {
+      if (!navigator.clipboard?.write || typeof ClipboardItem === "undefined") {
+        throw new Error("このブラウザーは画像コピーに対応していません。");
+      }
+
+      if (!document.hasFocus()) {
+        throw new DOMException("ページ内をクリックしてから、もう一度画像コピーを実行してください。", "NotAllowedError");
+      }
+
+      const blobPromise = createPosterPngBlob().then((blob) => {
+        if (!blob) {
+          throw new Error("PNG画像を生成できませんでした。");
+        }
+        return blob;
+      });
+
+      await navigator.clipboard.write([
+        new ClipboardItem({
+          "image/png": blobPromise
+        })
+      ]);
+      setImageExportMessage("ポスター画像をコピーしました。");
+    } catch (error) {
+      console.error("Failed to copy poster image:", error);
+
+      if (error instanceof DOMException && error.name === "NotAllowedError") {
+        setImageExportMessage(
+          document.hasFocus()
+            ? "ブラウザーに画像コピーを拒否されました。PNG保存をご利用ください。"
+            : "ページ内をクリックしてから、もう一度画像コピーを実行してください。"
+        );
+      } else if (error instanceof TypeError) {
+        setImageExportMessage("このブラウザーでは直接画像をコピーできません。PNG保存をご利用ください。");
+      } else {
+        setImageExportMessage("画像をコピーできませんでした。PNG保存をご利用ください。");
+      }
+    } finally {
+      setImageGenerationAction(null);
+    }
+  };
+
+  const runImageGeneration = async (action: Exclude<ImageGenerationAction, "copy">) => {
+    if (imageGenerationAction) return;
+
+    setImageGenerationAction(action);
+    setImageExportMessage("");
+
+    try {
+      const blob = await createPosterPngBlob();
+      const fileName = getPosterFileName(data.title);
+
+      if (action === "download") {
+        const url = URL.createObjectURL(blob);
+        const link = document.createElement("a");
+        link.href = url;
+        link.download = fileName;
+        link.click();
+        window.setTimeout(() => URL.revokeObjectURL(url), 1000);
+        setImageExportMessage("PNG画像を保存しました。");
+        return;
+      }
+
+      const file = new File([blob], fileName, { type: "image/png" });
+      if (typeof navigator.canShare !== "function" || !navigator.canShare({ files: [file] }) || typeof navigator.share !== "function") {
+        throw new Error("File sharing is not supported.");
+      }
+      await navigator.share({
+        files: [file],
+        title: "大会ポスター"
+      });
+      setImageExportMessage("共有メニューを開きました。");
+    } catch (error) {
+      console.error(error);
+      setImageExportMessage("画像を生成できませんでした。背景画像やQRコードの読み込み後にもう一度お試しください。");
+    } finally {
+      setImageGenerationAction(null);
+    }
   };
 
   const handleBackgroundUpload = useCallback(async (file: File) => {
@@ -450,16 +634,36 @@ export function EventPosterEditor() {
 
         </aside>
 
-        <section className="event-poster-preview-column min-w-0 space-y-3 xl:h-full xl:min-h-0 xl:overflow-hidden">
+        <section className="event-poster-preview-column relative min-w-0 space-y-3 xl:h-full xl:min-h-0 xl:overflow-hidden">
           <div className="event-poster-ui preview-heading-row flex flex-wrap items-end justify-between gap-3">
             <div>
               <h2 className="text-xl font-black">リアルタイムプレビュー</h2>
               <p className="text-sm text-slate-600">ポスター本体は 210mm × 297mm の同一DOMです。</p>
             </div>
-            <button className="preview-print-button" onClick={() => window.print()} type="button">
-              印刷
-            </button>
+            <div className="flex flex-wrap justify-end gap-2">
+              <button className="preview-print-button" onClick={() => window.print()} type="button">
+                印刷
+              </button>
+              {canCopyImage ? (
+                <button className="preview-print-button" disabled={Boolean(imageGenerationAction)} onClick={() => void handleCopyPosterImage()} type="button">
+                  {imageGenerationAction === "copy" ? "画像を生成中…" : "画像をコピー"}
+                </button>
+              ) : null}
+              <button className="preview-print-button" disabled={Boolean(imageGenerationAction)} onClick={() => void runImageGeneration("download")} type="button">
+                {imageGenerationAction === "download" ? "画像を生成中…" : "PNGを保存"}
+              </button>
+              {canShareImage ? (
+                <button className="preview-print-button" disabled={Boolean(imageGenerationAction)} onClick={() => void runImageGeneration("share")} type="button">
+                  {imageGenerationAction === "share" ? "画像を生成中…" : "画像を共有"}
+                </button>
+              ) : null}
+            </div>
           </div>
+          {imageExportMessage ? (
+            <div className="event-poster-ui event-poster-toast" role="status" aria-live="polite">
+              {imageExportMessage}
+            </div>
+          ) : null}
           <div
             className="event-poster-print-area rounded-[8px] border border-slate-200 bg-slate-100 p-3"
             ref={previewFrameRef}
@@ -477,6 +681,9 @@ export function EventPosterEditor() {
             </div>
           </div>
         </section>
+      </div>
+      <div aria-hidden="true" className="event-poster-export-host" ref={exportPosterRef}>
+        <EventPosterPreview data={data} />
       </div>
     </main>
   );

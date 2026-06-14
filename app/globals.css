@@ -526,6 +526,33 @@ textarea {
   transform-origin: top left;
 }
 
+.event-poster-export-host {
+  position: fixed;
+  left: -100000px;
+  top: 0;
+  width: 1240px;
+  height: 1754px;
+  overflow: hidden;
+  pointer-events: none;
+}
+
+.event-poster-toast {
+  position: absolute;
+  top: 64px;
+  right: 16px;
+  z-index: 30;
+  max-width: min(360px, calc(100% - 32px));
+  border-radius: 8px;
+  background: rgba(15, 23, 42, 0.94);
+  box-shadow: 0 8px 24px rgba(15, 23, 42, 0.2);
+  color: #fff;
+  font-size: 14px;
+  font-weight: 800;
+  line-height: 1.5;
+  padding: 10px 14px;
+  pointer-events: none;
+}
+
 @media (min-width: 1280px) {
   html:has(.event-poster-page),
   body:has(.event-poster-page) {
@@ -654,6 +681,10 @@ textarea {
   }
 
   body:has(.event-poster-page) .event-poster-ui {
+    display: none !important;
+  }
+
+  body:has(.event-poster-page) .event-poster-export-host {
     display: none !important;
   }
 
