@@ -49,10 +49,10 @@ export function PopupPreview({ data, previewRef }: PopupPreviewProps) {
   }, [data]);
 
   return (
-    <div className="w-full rounded-[8px] border border-slate-200 bg-slate-100 p-3 xl:h-[calc(100vh-7.5rem)]">
-      <div className="flex h-full min-h-[420px] w-full items-center justify-center overflow-auto xl:min-h-0">
+    <div className="purchase-pop-preview-frame w-full rounded-[8px] border border-slate-200 bg-slate-100 p-3 xl:h-[calc(100vh-7.5rem)]">
+      <div className="purchase-pop-preview-shell flex h-full min-h-[420px] w-full items-center justify-center overflow-auto xl:min-h-0">
         <canvas
-          className="block h-auto max-h-full max-w-full rounded-[2px] shadow-lg"
+          className="purchase-pop-print-area block h-auto max-h-full max-w-full rounded-[2px] shadow-lg"
           height={POSTER_HEIGHT}
           ref={canvasRef}
           style={{

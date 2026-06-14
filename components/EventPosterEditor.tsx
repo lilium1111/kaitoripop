@@ -186,9 +186,9 @@ export function EventPosterEditor() {
   }, [handleBackgroundUpload]);
 
   return (
-    <main className="event-poster-page min-h-screen bg-[#edf2fb] px-4 py-6 text-slate-900 lg:px-8 xl:h-screen xl:overflow-hidden">
-      <div className="mx-auto grid max-w-[1680px] gap-6 xl:h-full xl:grid-cols-[480px_minmax(0,1fr)]">
-        <aside className="event-poster-ui min-w-0 space-y-5 xl:h-full xl:overflow-y-auto xl:overflow-x-hidden xl:pr-2">
+    <main className="event-poster-page min-h-screen bg-[#edf2fb] px-4 py-6 text-slate-900 lg:px-8 xl:h-dvh xl:min-h-0 xl:overflow-hidden">
+      <div className="event-poster-workspace mx-auto grid max-w-[1680px] gap-6 xl:h-full xl:min-h-0 xl:grid-cols-[480px_minmax(0,1fr)]">
+        <aside className="event-poster-ui event-poster-editor-column min-w-0 space-y-5 xl:min-h-0 xl:overflow-y-auto xl:overflow-x-hidden xl:pr-2">
           <div className="space-y-3">
             <SiteNav />
             <div>
@@ -308,7 +308,7 @@ export function EventPosterEditor() {
 
         </aside>
 
-        <section className="min-w-0 space-y-3 xl:h-full xl:overflow-hidden">
+        <section className="event-poster-preview-column min-w-0 space-y-3 xl:h-full xl:min-h-0 xl:overflow-hidden">
           <div className="event-poster-ui preview-heading-row flex flex-wrap items-end justify-between gap-3">
             <div>
               <h2 className="text-xl font-black">リアルタイムプレビュー</h2>

@@ -142,9 +142,9 @@ export function PopupEditor() {
   }
 
   return (
-    <main className="min-h-screen overflow-x-hidden bg-[#eef4ff] px-4 py-6 text-slate-900 lg:px-8 xl:h-screen xl:overflow-hidden">
+    <main className="purchase-pop-page min-h-screen overflow-x-hidden bg-[#eef4ff] px-4 py-6 text-slate-900 lg:px-8 xl:h-screen xl:overflow-hidden">
       <div className="mx-auto grid max-w-[1680px] gap-6 xl:h-full xl:grid-cols-[520px_minmax(0,1fr)]">
-        <aside className="min-w-0 space-y-5 xl:h-full xl:overflow-y-auto xl:overflow-x-hidden xl:pr-2">
+        <aside className="purchase-pop-ui min-w-0 space-y-5 xl:h-full xl:overflow-y-auto xl:overflow-x-hidden xl:pr-2">
           <div className="space-y-3">
             <SiteNav />
             <div>
@@ -318,8 +318,8 @@ export function PopupEditor() {
           </section>
         </aside>
 
-        <section className="min-w-0 space-y-3 xl:sticky xl:top-6 xl:h-[calc(100vh-3rem)] xl:overflow-hidden">
-          <div className="preview-heading-row flex flex-wrap items-end justify-between gap-3">
+        <section className="purchase-pop-preview-column min-w-0 space-y-3 xl:sticky xl:top-6 xl:h-[calc(100vh-3rem)] xl:overflow-hidden">
+          <div className="purchase-pop-ui preview-heading-row flex flex-wrap items-end justify-between gap-3">
             <div>
               <h2 className="text-xl font-black">{"\u30ea\u30a2\u30eb\u30bf\u30a4\u30e0\u30d7\u30ec\u30d3\u30e5\u30fc"}</h2>
               <p className="text-sm text-slate-600">
