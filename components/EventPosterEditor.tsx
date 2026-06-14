@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { useDropzone } from "react-dropzone";
 import { EventPosterPreview } from "@/components/EventPosterPreview";
 import { SiteNav } from "@/components/SiteNav";
@@ -9,8 +9,12 @@ import { readFileAsDataUrl } from "@/lib/readFileAsDataUrl";
 import type { EventPosterData, EventPrize } from "@/types/eventPoster";
 
 const STORAGE_KEY = "kaitori-event-poster-v1";
+const EVENT_POSTER_WIDTH_PX = (210 / 25.4) * 96;
+const EVENT_POSTER_HEIGHT_PX = (297 / 25.4) * 96;
 
 type LegacyEventPosterData = Partial<EventPosterData> & {
+  details?: string;
+  venue?: string;
   weekday?: string;
 };
 
@@ -18,12 +22,10 @@ const initialData: EventPosterData = {
   title: "スペシャルトーナメント《未知なる彼方へ！シーズン》",
   eventDate: "6月27日（土）",
   startTime: "11:00",
-  venue: "Misteria店内",
   capacity: "40名",
   entryFee: "1000円",
   prizes: [{ label: "参加賞", value: "1000円" }],
   summary: "スイスドロー形式で開催します。初心者の方もお気軽にご参加ください。",
-  details: "その他詳細は公式ホームページにて",
   officialUrl: "",
   backgroundScale: 115,
   backgroundX: 0,
@@ -34,6 +36,8 @@ const initialData: EventPosterData = {
 function normalizeData(data: LegacyEventPosterData): EventPosterData {
   const rest = { ...data };
   delete rest.backgroundImage;
+  delete rest.details;
+  delete rest.venue;
   delete rest.weekday;
   const prizes = Array.isArray(data.prizes)
     ? data.prizes.map((prize) => ({
@@ -49,11 +53,9 @@ type FieldName = keyof Pick<
   | "title"
   | "eventDate"
   | "startTime"
-  | "venue"
   | "capacity"
   | "entryFee"
   | "summary"
-  | "details"
   | "officialUrl"
 >;
 
@@ -79,6 +81,8 @@ function getPosterContentWeight(data: EventPosterData) {
 
 export function EventPosterEditor() {
   const [data, setData] = useState<EventPosterData>(initialData);
+  const [posterScale, setPosterScale] = useState(0.62);
+  const previewFrameRef = useRef<HTMLDivElement>(null);
   const { save, load } = useLocalStorage<EventPosterData>(STORAGE_KEY);
   const mayOverflowPoster = getPosterContentWeight(data) > 820;
 
@@ -91,6 +95,29 @@ export function EventPosterEditor() {
     const { backgroundImage, ...serializableData } = data;
     save(serializableData as EventPosterData);
   }, [data, save]);
+
+  useEffect(() => {
+    const frame = previewFrameRef.current;
+    if (!frame) return;
+    const targetFrame = frame;
+
+    function updateScale() {
+      const rect = targetFrame.getBoundingClientRect();
+      const availableWidth = Math.max(targetFrame.clientWidth - 24, 1);
+      const availableHeight = Math.max(window.innerHeight - rect.top - 24, 1);
+      const nextScale = Math.min(availableWidth / EVENT_POSTER_WIDTH_PX, availableHeight / EVENT_POSTER_HEIGHT_PX, 1);
+      setPosterScale(Number(Math.max(nextScale, 0.3).toFixed(4)));
+    }
+
+    updateScale();
+    const observer = new ResizeObserver(updateScale);
+    observer.observe(targetFrame);
+    window.addEventListener("resize", updateScale);
+    return () => {
+      observer.disconnect();
+      window.removeEventListener("resize", updateScale);
+    };
+  }, []);
 
   const updateField = (field: FieldName, value: string) => {
     setData((current) => ({ ...current, [field]: value }));
@@ -159,9 +186,9 @@ export function EventPosterEditor() {
   }, [handleBackgroundUpload]);
 
   return (
-    <main className="event-poster-page min-h-screen bg-[#edf2fb] px-4 py-6 text-slate-900 lg:px-8">
-      <div className="mx-auto grid max-w-[1680px] gap-6 xl:grid-cols-[480px_minmax(0,1fr)]">
-        <aside className="event-poster-ui min-w-0 space-y-5 xl:max-h-[calc(100vh-3rem)] xl:overflow-y-auto xl:pr-2">
+    <main className="event-poster-page min-h-screen bg-[#edf2fb] px-4 py-6 text-slate-900 lg:px-8 xl:h-screen xl:overflow-hidden">
+      <div className="mx-auto grid max-w-[1680px] gap-6 xl:h-full xl:grid-cols-[480px_minmax(0,1fr)]">
+        <aside className="event-poster-ui min-w-0 space-y-5 xl:h-full xl:overflow-y-auto xl:overflow-x-hidden xl:pr-2">
           <div className="space-y-3">
             <SiteNav />
             <div>
@@ -174,7 +201,7 @@ export function EventPosterEditor() {
             <div className="grid gap-4 sm:grid-cols-2">
               <label className="grid gap-1 text-sm font-semibold text-slate-700 sm:col-span-2">
                 大会タイトル
-                <input className="h-10 rounded border border-slate-300 px-3 font-normal" value={data.title} onChange={(event) => updateField("title", event.target.value)} />
+                <textarea className="min-h-20 resize-y rounded border border-slate-300 px-3 py-2 font-normal" rows={2} value={data.title} onChange={(event) => updateField("title", event.target.value)} />
               </label>
               <label className="grid gap-1 text-sm font-semibold text-slate-700">
                 開催日
@@ -197,16 +224,8 @@ export function EventPosterEditor() {
                 <textarea className="min-h-32 resize-y rounded border border-slate-300 px-3 py-2 font-normal" rows={5} value={data.summary} onChange={(event) => updateField("summary", event.target.value)} />
               </label>
               <label className="grid gap-1 text-sm font-semibold text-slate-700 sm:col-span-2">
-                詳細案内文
-                <textarea className="min-h-24 resize-y rounded border border-slate-300 px-3 py-2 font-normal" rows={4} value={data.details} onChange={(event) => updateField("details", event.target.value)} />
-              </label>
-              <label className="grid gap-1 text-sm font-semibold text-slate-700 sm:col-span-2">
                 公式サイトURL
                 <input className="h-10 rounded border border-slate-300 px-3 font-normal" placeholder="https://example.com" value={data.officialUrl} onChange={(event) => updateField("officialUrl", event.target.value)} />
-              </label>
-              <label className="grid gap-1 text-sm font-semibold text-slate-500 sm:col-span-2">
-                開催場所（補助メモ）
-                <input className="h-10 rounded border border-slate-300 px-3 font-normal text-slate-700" value={data.venue} onChange={(event) => updateField("venue", event.target.value)} />
               </label>
             </div>
           </FormSection>
@@ -287,26 +306,30 @@ export function EventPosterEditor() {
             </div>
           </FormSection>
 
-          <section className="rounded-[8px] border border-slate-200 bg-white p-4 shadow-sm">
-            <button className="h-11 w-full rounded bg-slate-950 px-4 text-sm font-black text-white" onClick={() => window.print()} type="button">
-              印刷
-            </button>
-            <p className="mt-3 text-xs leading-relaxed text-slate-500">
-              推奨設定：用紙 A4 / 倍率 100% / 余白 なし / 背景グラフィック 有効
-            </p>
-          </section>
         </aside>
 
-        <section className="min-w-0 space-y-3 xl:sticky xl:top-6 xl:h-[calc(100vh-3rem)]">
-          <div className="event-poster-ui flex flex-wrap items-end justify-between gap-3">
+        <section className="min-w-0 space-y-3 xl:h-full xl:overflow-hidden">
+          <div className="event-poster-ui preview-heading-row flex flex-wrap items-end justify-between gap-3">
             <div>
               <h2 className="text-xl font-black">リアルタイムプレビュー</h2>
               <p className="text-sm text-slate-600">ポスター本体は 210mm × 297mm の同一DOMです。</p>
             </div>
+            <button className="preview-print-button" onClick={() => window.print()} type="button">
+              印刷
+            </button>
           </div>
-          <div className="event-poster-print-area rounded-[8px] border border-slate-200 bg-slate-100 p-3 xl:h-[calc(100vh-7.5rem)]">
-            <div className="flex h-full min-h-[720px] justify-center overflow-auto xl:min-h-0">
-              <div className="event-poster-scale">
+          <div
+            className="event-poster-print-area rounded-[8px] border border-slate-200 bg-slate-100 p-3"
+            ref={previewFrameRef}
+          >
+            <div
+              className="event-poster-scale-shell"
+              style={{
+                height: EVENT_POSTER_HEIGHT_PX * posterScale,
+                width: EVENT_POSTER_WIDTH_PX * posterScale
+              }}
+            >
+              <div className="event-poster-scale" style={{ transform: `scale(${posterScale})` }}>
                 <EventPosterPreview data={data} />
               </div>
             </div>

@@ -319,13 +319,16 @@ export function PopupEditor() {
         </aside>
 
         <section className="min-w-0 space-y-3 xl:sticky xl:top-6 xl:h-[calc(100vh-3rem)] xl:overflow-hidden">
-          <div className="flex flex-wrap items-end justify-between gap-3">
+          <div className="preview-heading-row flex flex-wrap items-end justify-between gap-3">
             <div>
               <h2 className="text-xl font-black">{"\u30ea\u30a2\u30eb\u30bf\u30a4\u30e0\u30d7\u30ec\u30d3\u30e5\u30fc"}</h2>
               <p className="text-sm text-slate-600">
                 {"\u51fa\u529b\u30b5\u30a4\u30ba"} 2480 x 3508px / {"\u8868\u793a\u30ab\u30fc\u30c9"} {visibleCardCount} {"\u679a"}
               </p>
             </div>
+            <button className="preview-print-button" onClick={() => window.print()} type="button">
+              印刷
+            </button>
           </div>
           <PopupPreview data={data} previewRef={previewRef} />
         </section>

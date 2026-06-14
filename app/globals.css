@@ -23,6 +23,23 @@ textarea {
   font: inherit;
 }
 
+.preview-print-button {
+  height: 2.5rem;
+  border: 0;
+  border-radius: 8px;
+  background: #0f172a;
+  cursor: pointer;
+  padding: 0 1rem;
+  color: white;
+  font-size: 0.875rem;
+  font-weight: 900;
+  line-height: 1;
+}
+
+.preview-print-button:hover {
+  background: #1e293b;
+}
+
 .pop-stripes {
   background-image:
     repeating-linear-gradient(
@@ -148,6 +165,8 @@ textarea {
 
 .event-poster-title {
   font-family: "Arial Black", "Yu Gothic", "Hiragino Kaku Gothic ProN", Meiryo, sans-serif;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
   -webkit-text-stroke: 0.55px rgba(255, 255, 255, 0.72);
   paint-order: stroke fill;
   text-shadow:
@@ -183,29 +202,6 @@ textarea {
   background:
     linear-gradient(180deg, rgba(2, 6, 23, 0.46) 0%, rgba(2, 6, 23, 0.08) 42%, rgba(2, 6, 23, 0.78) 100%),
     radial-gradient(circle at 50% 42%, transparent 0%, rgba(0, 0, 0, 0.58) 100%);
-}
-
-.event-poster-info {
-  border: 1.5px solid rgba(255, 255, 255, 0.34);
-  border-radius: 6px;
-  background: rgba(255, 255, 255, 0.13);
-  padding: 4mm 3.5mm;
-}
-
-.event-poster-info span {
-  display: block;
-  color: #bae6fd;
-  font-size: 10pt;
-  font-weight: 900;
-}
-
-.event-poster-info strong {
-  display: block;
-  margin-top: 1.4mm;
-  color: white;
-  font-size: 21pt;
-  font-weight: 900;
-  line-height: 1;
 }
 
 .event-poster-value-group {
@@ -280,17 +276,22 @@ textarea {
   overflow-wrap: anywhere;
 }
 
+.event-poster-print-area {
+  display: flex;
+  justify-content: center;
+  overflow: hidden;
+}
+
+.event-poster-scale-shell {
+  flex: 0 0 auto;
+  overflow: hidden;
+}
+
 .event-poster-scale {
   width: 210mm;
   height: 297mm;
   transform: scale(0.62);
-  transform-origin: top center;
-}
-
-@media (max-width: 900px) {
-  .event-poster-scale {
-    transform: scale(0.45);
-  }
+  transform-origin: top left;
 }
 
 @page {
@@ -299,49 +300,74 @@ textarea {
 }
 
 @media print {
+  html:has(.event-poster-page),
   body:has(.event-poster-page) {
-    background: white;
+    width: 210mm !important;
+    height: 297mm !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    overflow: hidden !important;
+  }
+
+  body:has(.event-poster-page) {
+    background: transparent !important;
   }
 
   body:has(.event-poster-page) .event-poster-ui {
     display: none !important;
   }
 
+  .preview-print-button {
+    display: none !important;
+  }
+
   body:has(.event-poster-page) .event-poster-page {
-    min-height: 0;
-    padding: 0;
-    background: white;
+    min-height: 0 !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    background: transparent !important;
   }
 
   body:has(.event-poster-page) .event-poster-print-area {
-    position: fixed;
-    inset: 0;
-    display: block;
-    width: 210mm;
-    height: 297mm;
-    overflow: visible;
-    border: 0;
-    border-radius: 0;
-    padding: 0;
-    background: white;
+    position: fixed !important;
+    inset: 0 !important;
+    display: block !important;
+    width: 210mm !important;
+    height: 297mm !important;
+    margin: 0 !important;
+    overflow: hidden !important;
+    border: 0 !important;
+    border-radius: 0 !important;
+    padding: 0 !important;
+    background: transparent !important;
+    transform: none !important;
   }
 
-  body:has(.event-poster-page) .event-poster-print-area > div {
-    display: block;
-    min-height: 0;
-    height: 297mm;
-    overflow: visible;
-  }
-
+  body:has(.event-poster-page) .event-poster-scale-shell,
   body:has(.event-poster-page) .event-poster-scale {
-    width: 210mm;
-    height: 297mm;
-    transform: none;
+    display: block !important;
+    width: 210mm !important;
+    height: 297mm !important;
+    min-height: 0 !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    border: 0 !important;
+    overflow: hidden !important;
+    transform: none !important;
+  }
+
+  body:has(.event-poster-page) .event-poster {
+    position: absolute !important;
+    inset: 0 !important;
+    width: 210mm !important;
+    height: 297mm !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    transform: none !important;
   }
 
   body:has(.event-poster-page) .event-poster-detail-panel,
-  body:has(.event-poster-page) .event-poster-value-group,
-  body:has(.event-poster-page) .event-poster-info {
+  body:has(.event-poster-page) .event-poster-value-group {
     border-color: rgba(255, 255, 255, 0.55);
   }
 }

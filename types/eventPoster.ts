@@ -7,12 +7,10 @@ export type EventPosterData = {
   title: string;
   eventDate: string;
   startTime: string;
-  venue: string;
   capacity: string;
   entryFee: string;
   prizes: EventPrize[];
   summary: string;
-  details: string;
   officialUrl: string;
   backgroundImage?: string;
   backgroundScale: number;

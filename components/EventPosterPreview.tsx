@@ -35,7 +35,7 @@ export function EventPosterPreview({ data }: EventPosterPreviewProps) {
   const hasEntryFee = data.entryFee.trim().length > 0;
   const visiblePrizes = data.prizes.filter((prize) => prize.label.trim().length > 0 || prize.value.trim().length > 0);
   const hasPrizes = visiblePrizes.length > 0;
-  const titleSizeClass = getTitleSizeClass(data.title);
+  const titleSizeClass = getTitleSizeClass(data.title.trim());
 
   useEffect(() => {
     let isMounted = true;
